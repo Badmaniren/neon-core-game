@@ -3,10 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#05050a">
-<title>NEON CORE: OVERDRIVE</title>
+<title>ASHEN BLADE — Roguelite Slasher v0.1</title>
 <style>
   * {
     box-sizing: border-box;
@@ -20,1128 +17,1264 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: #040409;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #0b0c10;
+    font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
     touch-action: none;
-    color: #fff;
+    color: #e6e1d6;
   }
-  #canvas-container {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
-  /* ВЕРТИКАЛЬНЫЙ МОБИЛЬНЫЙ HUD */
+
+  /* ВЕРХНИЙ HUD */
   #hud {
     position: absolute;
     inset: 0;
-    z-index: 2;
     pointer-events: none;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)) 16px;
+    padding: max(12px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
   }
-  .top-bar {
+  .top-row {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    width: 100%;
   }
-  .stat-card {
-    background: rgba(10, 12, 24, 0.72);
-    border: 1px solid rgba(0, 243, 255, 0.35);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 8px 14px;
-    border-radius: 12px;
-    box-shadow: 0 0 20px rgba(0, 243, 255, 0.12);
-  }
-  .stat-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #00f3ff;
-    opacity: 0.85;
-  }
-  .stat-value {
-    font-size: 24px;
-    font-weight: 900;
-    letter-spacing: 0.5px;
-    text-shadow: 0 0 12px rgba(0, 243, 255, 0.7);
-  }
-  .combo-badge {
-    font-size: 14px;
-    font-weight: 800;
-    color: #ff00aa;
-    text-shadow: 0 0 10px #ff00aa;
-    margin-top: 2px;
-    min-height: 18px;
-  }
-  .bars-wrap {
-    width: 150px;
+  .player-stats {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    background: rgba(14, 15, 20, 0.78);
+    border: 1px solid rgba(196, 164, 108, 0.35);
+    padding: 8px 12px;
+    border-radius: 8px;
+    min-width: 210px;
   }
-  .bar-group {
-    background: rgba(10, 12, 24, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
-    padding: 6px 10px;
-    backdrop-filter: blur(8px);
+  .hp-bar-wrap {
+    width: 100%;
+    height: 11px;
+    background: #23191d;
+    border: 1px solid #5a383e;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
   }
-  .bar-header {
+  #hp-Lag {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    background: #d99b26;
+    width: 100%;
+    transition: width 0.45s ease-out;
+  }
+  #hp-Fill {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    background: linear-gradient(90deg, #8f1d2c, #d93848);
+    width: 100%;
+  }
+  .meta-row {
     display: flex;
     justify-content: space-between;
-    font-size: 10px;
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    color: #c4a46c;
     font-weight: 700;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
   }
-  .bar-track {
-    width: 100%;
-    height: 7px;
-    background: rgba(255, 255, 255, 0.1);
+  .relics-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+  }
+  .relic-tag {
+    font-size: 10px;
+    padding: 2px 6px;
     border-radius: 4px;
-    overflow: hidden;
-  }
-  .bar-fill {
-    height: 100%;
-    width: 100%;
-    transition: width 0.12s ease-out;
-  }
-  #hp-fill {
-    background: linear-gradient(90deg, #ff0055, #00ffaa);
-    box-shadow: 0 0 10px #00ffaa;
-  }
-  #dash-fill {
-    background: linear-gradient(90deg, #0088ff, #00f3ff);
-    box-shadow: 0 0 10px #00f3ff;
+    background: rgba(196, 164, 108, 0.15);
+    border: 1px solid rgba(196, 164, 108, 0.4);
+    color: #f0dbb0;
   }
 
-  /* НИЖНЯЯ ЗОНА УПРАВЛЕНИЯ */
-  .bottom-controls {
+  .room-badge {
+    background: rgba(14, 15, 20, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 8px 14px;
+    border-radius: 8px;
+    text-align: right;
+  }
+  .room-title {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #c4a46c;
+    text-transform: uppercase;
+  }
+  .room-sub {
+    font-size: 11px;
+    color: #9296a0;
+    margin-top: 2px;
+  }
+
+  /* ТАЧ-КОНТРОЛЛЕР (ЛЕВЫЙ СТИК + ПРАВЫЙ БЛОК СЛЭШЕРА) */
+  .controls-row {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
     width: 100%;
   }
-  .hint-box {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.55);
-    max-width: 180px;
-    line-height: 1.35;
-  }
-  #dash-btn {
+  #stick-zone {
+    width: 150px;
+    height: 150px;
+    position: relative;
     pointer-events: auto;
-    width: 78px;
-    height: 78px;
+  }
+  .stick-base {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 116px; height: 116px;
+    transform: translate(-50%, -50%);
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 243, 255, 0.3) 0%, rgba(0, 40, 80, 0.75) 100%);
-    border: 2px solid #00f3ff;
-    box-shadow: 0 0 25px rgba(0, 243, 255, 0.45), inset 0 0 15px rgba(0, 243, 255, 0.3);
-    color: #fff;
-    font-weight: 900;
-    font-size: 13px;
-    letter-spacing: 1px;
+    border: 2px solid rgba(196, 164, 108, 0.35);
+    background: radial-gradient(circle, rgba(196, 164, 108, 0.08) 0%, rgba(10, 10, 14, 0.45) 100%);
+  }
+  #stick-knob {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 48px; height: 48px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, #e8d0a5 0%, #9c7a44 100%);
+    box-shadow: 0 0 14px rgba(196, 164, 108, 0.5);
+  }
+
+  .action-buttons {
+    position: relative;
+    width: 210px;
+    height: 155px;
+    pointer-events: auto;
+  }
+  .act-btn {
+    position: absolute;
+    border-radius: 50%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    active: scale(0.92);
-    transition: transform 0.08s, opacity 0.2s;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+    color: #f5efe6;
+    border: 2px solid rgba(255, 255, 255, 0.28);
+    backdrop-filter: blur(4px);
+    transition: transform 0.06s;
   }
-  #dash-btn:active {
-    transform: scale(0.9);
-    background: rgba(0, 243, 255, 0.6);
+  .act-btn:active, .act-btn.pressed {
+    transform: scale(0.88);
+    filter: brightness(1.3);
   }
-  #dash-btn span {
-    font-size: 9px;
-    opacity: 0.75;
-    margin-top: 2px;
+  /* Кнопка УДАРА — главная и крупная */
+  #btn-atk {
+    width: 82px; height: 82px;
+    right: 68px; bottom: 8px;
+    background: radial-gradient(circle, rgba(196, 52, 68, 0.72), rgba(80, 18, 28, 0.85));
+    border-color: #e05364;
+    box-shadow: 0 0 20px rgba(224, 83, 100, 0.4);
+    font-size: 13px;
   }
-
-  /* ПЛАВАЮЩИЙ ВИРТУАЛЬНЫЙ ДЖОЙСТИК */
-  #joystick-ring {
-    position: absolute;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    border: 2px solid rgba(0, 243, 255, 0.45);
-    background: radial-gradient(circle, rgba(0, 243, 255, 0.08) 0%, rgba(0, 0, 0, 0.25) 100%);
-    box-shadow: 0 0 25px rgba(0, 243, 255, 0.2);
-    transform: translate(-50%, -50%);
-    pointer-events: none;
+  /* Кнопка ПРЫЖКА */
+  #btn-jmp {
+    width: 72px; height: 72px;
+    right: 0px; bottom: 58px;
+    background: radial-gradient(circle, rgba(72, 130, 180, 0.65), rgba(24, 48, 72, 0.85));
+    border-color: #6ab0e8;
+    font-size: 12px;
+  }
+  /* Кнопка ПЕРЕКАТА / РЫВКА */
+  #btn-dash {
+    width: 64px; height: 64px;
+    right: 138px; bottom: 58px;
+    background: radial-gradient(circle, rgba(196, 164, 108, 0.65), rgba(64, 50, 28, 0.85));
+    border-color: #d8b878;
+    font-size: 11px;
+  }
+  /* Кнопка ВЗАИМОДЕЙСТВИЯ (Алтари / Врата) */
+  #btn-use {
+    width: 58px; height: 58px;
+    right: 78px; bottom: 98px;
+    background: radial-gradient(circle, rgba(90, 185, 130, 0.75), rgba(25, 65, 42, 0.9));
+    border-color: #68e09c;
+    font-size: 11px;
     display: none;
-    z-index: 3;
-  }
-  #joystick-knob {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: radial-gradient(circle, #ffffff 0%, #00f3ff 70%);
-    box-shadow: 0 0 20px #00f3ff;
-    transform: translate(-50%, -50%);
+    box-shadow: 0 0 16px rgba(104, 224, 156, 0.5);
   }
 
-  /* ЭКРАН СТАРТА / GAME OVER */
-  #overlay {
+  /* МОДАЛКА ВЫБОРА РЕЛИКВИИ (РОГАЛИК) */
+  #relic-modal {
     position: absolute;
     inset: 0;
-    z-index: 10;
-    background: radial-gradient(circle at center, rgba(12, 16, 36, 0.85) 0%, rgba(4, 4, 9, 0.96) 100%);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    display: flex;
+    z-index: 20;
+    background: rgba(8, 9, 12, 0.88);
+    backdrop-filter: blur(8px);
+    display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px;
-    text-align: center;
+    padding: 20px;
   }
-  .game-title {
-    font-size: 36px;
-    font-weight: 900;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    background: linear-gradient(90deg, #00f3ff, #ff00aa, #00ffaa);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.4));
-    margin-bottom: 8px;
-  }
-  .game-sub {
-    font-size: 13px;
-    color: #9ba4b5;
-    max-width: 310px;
-    line-height: 1.5;
-    margin-bottom: 24px;
-  }
-  .rules-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    width: 100%;
-    max-width: 320px;
-    margin-bottom: 28px;
-    text-align: left;
-  }
-  .rule-item {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: 12px;
-    line-height: 1.4;
-  }
-  .rule-item b {
-    color: #00f3ff;
-  }
-  .play-btn {
-    pointer-events: auto;
-    background: linear-gradient(90deg, #00f3ff, #0088ff);
-    border: none;
-    color: #040409;
-    font-size: 16px;
+  .modal-title {
+    font-size: 20px;
     font-weight: 900;
     letter-spacing: 2px;
+    color: #c4a46c;
+    margin-bottom: 6px;
     text-transform: uppercase;
-    padding: 16px 42px;
-    border-radius: 999px;
-    box-shadow: 0 0 30px rgba(0, 243, 255, 0.6);
-    cursor: pointer;
-    transition: transform 0.1s;
   }
-  .play-btn:active {
+  .modal-sub {
+    font-size: 12px;
+    color: #9296a0;
+    margin-bottom: 18px;
+  }
+  .cards-row {
+    display: flex;
+    gap: 14px;
+    max-width: 680px;
+    width: 100%;
+    justify-content: center;
+  }
+  .relic-card {
+    flex: 1;
+    background: linear-gradient(180deg, #181a22 0%, #101218 100%);
+    border: 1px solid #c4a46c;
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform 0.12s, box-shadow 0.12s;
+    text-align: left;
+  }
+  .relic-card:active {
     transform: scale(0.95);
   }
-  #final-score-box {
-    display: none;
-    margin-bottom: 20px;
+  .relic-card h4 {
+    color: #f0dbb0;
+    font-size: 14px;
+    margin-bottom: 6px;
   }
-  #final-score-val {
-    font-size: 44px;
-    font-weight: 900;
-    color: #ff00aa;
-    text-shadow: 0 0 20px #ff00aa;
-  }
-  /* Вспышка при уроне */
-  #damage-flash {
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    pointer-events: none;
-    background: radial-gradient(circle, transparent 40%, rgba(255, 0, 85, 0.65) 100%);
-    opacity: 0;
-    transition: opacity 0.15s;
+  .relic-card p {
+    color: #a6aab5;
+    font-size: 12px;
+    line-height: 1.35;
   }
 </style>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-  }
-}
-</script>
 </head>
 <body>
 
-<div id="canvas-container"></div>
-<div id="damage-flash"></div>
+<canvas id="game"></canvas>
 
-<!-- ПЛАВАЮЩИЙ ДЖОЙСТИК -->
-<div id="joystick-ring">
-  <div id="joystick-knob"></div>
-</div>
-
-<!-- МОБИЛЬНЫЙ ИНТЕРФЕЙС -->
 <div id="hud">
-  <div class="top-bar">
-    <div class="stat-card">
-      <div class="stat-label">Счет</div>
-      <div class="stat-value" id="score-val">0</div>
-      <div class="combo-badge" id="combo-val"></div>
+  <div class="top-row">
+    <div class="player-stats">
+      <div class="meta-row">
+        <span>ПЕПЕЛЬНЫЙ СТРАЖ</span>
+        <span id="hp-txt">100 / 100</span>
+      </div>
+      <div class="hp-bar-wrap">
+        <div id="hp-Lag"></div>
+        <div id="hp-Fill"></div>
+      </div>
+      <div class="meta-row">
+        <span id="atk-txt">УРОН: 22</span>
+        <span id="souls-txt">ПЕПЕЛ: 0</span>
+      </div>
+      <div class="relics-bar" id="relics-list"></div>
     </div>
 
-    <div class="bars-wrap">
-      <div class="bar-group">
-        <div class="bar-header">
-          <span style="color:#00ffaa">ЩИТ ЯДРА</span>
-          <span id="hp-text">100%</span>
-        </div>
-        <div class="bar-track">
-          <div class="bar-fill" id="hp-fill"></div>
-        </div>
-      </div>
-
-      <div class="bar-group">
-        <div class="bar-header">
-          <span style="color:#00f3ff">ИМПУЛЬС (DASH)</span>
-          <span id="wave-text">ВОЛНА 1</span>
-        </div>
-        <div class="bar-track">
-          <div class="bar-fill" id="dash-fill"></div>
-        </div>
-      </div>
+    <div class="room-badge">
+      <div class="room-title" id="room-name">ЗАЛ I — ЦИТАДЕЛЬ ПЕПЛА</div>
+      <div class="room-sub" id="room-status">Врагов осталось: 0</div>
     </div>
   </div>
 
-  <div class="bottom-controls">
-    <div class="hint-box">
-      Тяни в любом месте для движения.<br>Двойной тап или кнопка — <b>ТАРАН</b>.
+  <div class="controls-row">
+    <div id="stick-zone">
+      <div class="stick-base"></div>
+      <div id="stick-knob"></div>
     </div>
-    <button id="dash-btn">
-      DASH
-      <span>ТАРАН</span>
-    </button>
+
+    <div class="action-buttons">
+      <div class="act-btn" id="btn-use">ВЗЯТЬ</div>
+      <div class="act-btn" id="btn-dash">РЫВОК</div>
+      <div class="act-btn" id="btn-jmp">ПРЫЖОК</div>
+      <div class="act-btn" id="btn-atk">УДАР</div>
+    </div>
   </div>
 </div>
 
-<!-- СТАРТОВЫЙ ЭКРАН -->
-<div id="overlay">
-  <div class="game-title">NEON CORE</div>
-  <div class="game-sub">3D-арена с физикой инерции и шейдерным свечением</div>
-
-  <div id="final-score-box">
-    <div class="stat-label">ИТОГОВЫЙ РЕЗУЛЬТАТ</div>
-    <div id="final-score-val">0</div>
-  </div>
-
-  <div class="rules-grid">
-    <div class="rule-item">🟢 <b>Квантовые кубы</b> — собирай для энергии, очков и восстановления щита.</div>
-    <div class="rule-item">🔴 <b>Шипастые дроны</b> — преследуют по физике. Обычное столкновение отнимает щит.</div>
-    <div class="rule-item">⚡ <b>Режим ТАРАНА (Dash)</b> — делает тебя неуязвимым и <b>взрывает врагов</b> при ударе!</div>
-  </div>
-
-  <button class="play-btn" id="start-btn">ЗАПУСТИТЬ ЯДРО</button>
+<!-- ВЫБОР РЕЛИКВИИ -->
+<div id="relic-modal">
+  <div class="modal-title">АЛТАРЬ ПРЕДКОВ</div>
+  <div class="modal-sub">Выбери один дар, который изменит твой клинок в этом забеге</div>
+  <div class="cards-row" id="cards-container"></div>
 </div>
 
-<script type="module">
-import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-
-// ==========================================
-// 1. ПРОЦЕДУРНЫЙ СИНТЕЗАТОР ЗВУКА (Web Audio API)
-// ==========================================
-class SoundFX {
-  constructor() {
-    this.ctx = null;
-  }
+<script>
+// =====================================================
+// 1. СИНТЕЗАТОР ЗВУКА (МРАЧНЫЙ СЛЭШЕР: МЕТАЛЛ, УДАРЫ, РЫВКИ)
+// =====================================================
+class AudioEngine {
+  constructor() { this.ctx = null; }
   init() {
-    if (!this.ctx) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      this.ctx = new AudioCtx();
-    }
+    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (this.ctx.state === 'suspended') this.ctx.resume();
   }
-  play(type) {
-    if (!this.ctx) return;
+  slash(comboStep = 1) {
+    this.init();
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-
-    if (type === 'pickup') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(520, now);
-      osc.frequency.exponentialRampToValueAtTime(1240, now + 0.14);
-      gain.gain.setValueAtTime(0.18, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-      osc.start(now);
-      osc.stop(now + 0.15);
-    } else if (type === 'dash') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(140, now);
-      osc.frequency.exponentialRampToValueAtTime(680, now + 0.22);
-      gain.gain.setValueAtTime(0.22, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
-      osc.start(now);
-      osc.stop(now + 0.24);
-    } else if (type === 'kill') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(300, now);
-      osc.frequency.exponentialRampToValueAtTime(55, now + 0.28);
-      gain.gain.setValueAtTime(0.32, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.29);
-      osc.start(now);
-      osc.stop(now + 0.29);
-    } else if (type === 'hit') {
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(110, now);
-      osc.frequency.linearRampToValueAtTime(40, now + 0.25);
-      gain.gain.setValueAtTime(0.28, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
-      osc.start(now);
-      osc.stop(now + 0.26);
-    }
+    osc.type = 'sawtooth';
+    const baseFreq = comboStep === 3 ? 190 : (comboStep === 2 ? 320 : 260);
+    osc.frequency.setValueAtTime(baseFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(65, now + 0.11);
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(now); osc.stop(now + 0.12);
+  }
+  hit(isCrit = false) {
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = isCrit ? 'square' : 'triangle';
+    osc.frequency.setValueAtTime(isCrit ? 160 : 120, now);
+    osc.frequency.exponentialRampToValueAtTime(38, now + 0.16);
+    gain.gain.setValueAtTime(isCrit ? 0.32 : 0.24, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(now); osc.stop(now + 0.17);
+  }
+  jump() {
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(360, now + 0.09);
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(now); osc.stop(now + 0.1);
+  }
+  dash() {
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(240, now);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.14);
+    gain.gain.setValueAtTime(0.16, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(now); osc.stop(now + 0.15);
   }
 }
-const sfx = new SoundFX();
+const sfx = new AudioEngine();
 
-// ==========================================
-// 2. ИНИЦИАЛИЗАЦИЯ СЦЕНЫ И ШЕЙДЕРНОГО BLOOM
-// ==========================================
-const container = document.getElementById('canvas-container');
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x040409);
-scene.fog = new THREE.FogExp2(0x040409, 0.022);
+// =====================================================
+// 2. БАЗА РЕЛИКВИЙ РОГАЛИКА
+// =====================================================
+const RELIC_POOL = [
+  { id: 'vamp', name: 'Окровавленный клык', desc: '+4 HP при каждом убийстве врага клинком.', apply: (p) => { p.vampOnKill += 4; } },
+  { id: 'crit', name: 'Обсидиановая грань', desc: '+25% к шансу критического удара (x1.8 урона).', apply: (p) => { p.critChance += 0.25; } },
+  { id: 'heavy', name: 'Печать Палача', desc: 'Урон меча +30%, радиус взмаха +15%.', apply: (p) => { p.dmg = Math.round(p.dmg * 1.3); p.rangeBonus += 14; } },
+  { id: 'swift', name: 'Ртутная поступь', desc: 'Скорость бега +20%, откат рывка быстрее на 35%.', apply: (p) => { p.moveSpeed *= 1.2; p.dashCdMax *= 0.65; } },
+  { id: 'vital', name: 'Сердце Гаргульи', desc: 'Макс. HP +40 и мгновенное исцеление на 40 HP.', apply: (p) => { p.maxHp += 40; p.hp = Math.min(p.maxHp, p.hp + 40); } },
+  { id: 'shock', name: 'Грозовой пепел', desc: 'Третий удар комбо бьёт молнией по соседним врагам.', apply: (p) => { p.chainLightning = true; } }
+];
 
-const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 120);
-camera.position.set(0, 22, 16);
-camera.lookAt(0, 0, 0);
-
-const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.toneMapping = THREE.ReinhardToneMapping;
-renderer.toneMappingExposure = 1.35;
-container.appendChild(renderer.domElement);
-
-// Пост-процессинг UnrealBloomPass
-const renderScene = new RenderPass(scene, camera);
-const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight),
-  1.45, // сила свечения
-  0.45, // радиус
-  0.15  // порог
-);
-const composer = new EffectComposer(renderer);
-composer.addPass(renderScene);
-composer.addPass(bloomPass);
-
-// Освещение
-const ambientLight = new THREE.AmbientLight(0x223355, 1.8);
-scene.add(ambientLight);
-
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-dirLight.position.set(15, 30, 15);
-scene.add(dirLight);
-
-const playerLight = new THREE.PointLight(0x00f3ff, 6, 16);
-scene.add(playerLight);
-
-// ==========================================
-// 3. СОЗДАНИЕ КИБЕР-АРЕНЫ И ОКРУЖЕНИЯ
-// ==========================================
-const ARENA_RADIUS = 17.5;
-
-// Энергетическая сетка пола
-const gridHelper = new THREE.GridHelper(ARENA_RADIUS * 2.2, 28, 0x00f3ff, 0x161d3a);
-gridHelper.position.y = -0.5;
-scene.add(gridHelper);
-
-// Отражающий темный пол под сеткой
-const floorGeo = new THREE.CircleGeometry(ARENA_RADIUS, 64);
-const floorMat = new THREE.MeshStandardMaterial({
-  color: 0x060814,
-  roughness: 0.2,
-  metalness: 0.8
-});
-const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-floorMesh.rotation.x = -Math.PI / 2;
-floorMesh.position.y = -0.52;
-scene.add(floorMesh);
-
-// Неоновый силовой барьер по краю арены
-const ringGeo = new THREE.TorusGeometry(ARENA_RADIUS, 0.16, 16, 100);
-const ringMat = new THREE.MeshStandardMaterial({
-  color: 0x00f3ff,
-  emissive: 0x00f3ff,
-  emissiveIntensity: 2.2
-});
-const arenaRing = new THREE.Mesh(ringGeo, ringMat);
-arenaRing.rotation.x = Math.PI / 2;
-arenaRing.position.y = 0.1;
-scene.add(arenaRing);
-
-// Парящие фоновые монолиты вокруг арены
-const pillars = [];
-const pillarGeo = new THREE.BoxGeometry(1.4, 8, 1.4);
-for (let i = 0; i < 16; i++) {
-  const angle = (i / 16) * Math.PI * 2;
-  const dist = ARENA_RADIUS + 4.5 + Math.random() * 4;
-  const mat = new THREE.MeshStandardMaterial({
-    color: 0x0a0e1a,
-    emissive: i % 2 === 0 ? 0x00f3ff : 0xff00aa,
-    emissiveIntensity: 0.45,
-    roughness: 0.3
-  });
-  const mesh = new THREE.Mesh(pillarGeo, mat);
-  mesh.position.set(Math.cos(angle) * dist, -1 + Math.random() * 3, Math.sin(angle) * dist);
-  scene.add(mesh);
-  pillars.push({ mesh, baseY: mesh.position.y, phase: i * 0.6 });
+// =====================================================
+// 3. НАСТРОЙКА ХОЛСТА И КАМЕРЫ
+// =====================================================
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let W = window.innerWidth, H = window.innerHeight;
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W; canvas.height = H;
 }
+window.addEventListener('resize', resize);
+resize();
 
-// ==========================================
-// 4. ИГРОК (ГИРОСКОПИЧЕСКОЕ ЯДРО)
-// ==========================================
-const playerGroup = new THREE.Group();
-scene.add(playerGroup);
+// Виртуальный масштаб (чтобы на любом экране смартфона обзор был одинаковым)
+const VIEW_H = 520;
 
-// Внутренняя плазменная сфера
-const coreGeo = new THREE.IcosahedronGeometry(0.75, 2);
-const coreMat = new THREE.MeshStandardMaterial({
-  color: 0xffffff,
-  emissive: 0x00f3ff,
-  emissiveIntensity: 2.0,
-  wireframe: false,
-  roughness: 0.1,
-  metalness: 0.9
-});
-const coreMesh = new THREE.Mesh(coreGeo, coreMat);
-playerGroup.add(coreMesh);
-
-// Внешняя вращающаяся гео-клетка
-const shellGeo = new THREE.OctahedronGeometry(1.05, 0);
-const shellMat = new THREE.MeshStandardMaterial({
-  color: 0x00f3ff,
-  emissive: 0x0088ff,
-  emissiveIntensity: 1.2,
-  wireframe: true
-});
-const shellMesh = new THREE.Mesh(shellGeo, shellMat);
-playerGroup.add(shellMesh);
-
-// Орбитальное кольцо рывка
-const auraGeo = new THREE.RingGeometry(1.15, 1.35, 32);
-const auraMat = new THREE.MeshBasicMaterial({
-  color: 0x00ffaa,
-  side: THREE.DoubleSide,
-  transparent: true,
-  opacity: 0.0
-});
-const auraMesh = new THREE.Mesh(auraGeo, auraMat);
-auraMesh.rotation.x = Math.PI / 2;
-playerGroup.add(auraMesh);
-
-// ==========================================
-// 5. СОСТОЯНИЕ ИГРЫ И ФИЗИЧЕСКИЕ ПЕРЕМЕННЫЕ
-// ==========================================
-const state = {
-  running: false,
-  score: 0,
-  combo: 1,
-  comboTimer: 0,
-  wave: 1,
-  hp: 100,
-  dashEnergy: 100,
-  dashTimer: 0,
-  invulnTimer: 0,
-  shake: 0,
-  pos: new THREE.Vector3(0, 0.5, 0),
-  vel: new THREE.Vector3(0, 0, 0),
-  radius: 0.95
-};
-
-const enemies = [];
-const crystals = [];
-const particles = [];
-const shockwaves = [];
-const trailParticles = [];
-
-// ==========================================
-// 6. СПАВНЕРЫ ОБЪЕКТОВ И ЧАСТИЦ
-// ==========================================
-function spawnCrystal() {
-  const geo = new THREE.OctahedronGeometry(0.65, 0);
-  const mat = new THREE.MeshStandardMaterial({
-    color: 0x00ffaa,
-    emissive: 0x00ffaa,
-    emissiveIntensity: 2.2,
-    roughness: 0.1
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  const angle = Math.random() * Math.PI * 2;
-  const r = Math.random() * (ARENA_RADIUS - 3.5);
-  mesh.position.set(Math.cos(angle) * r, 0.6, Math.sin(angle) * r);
-  scene.add(mesh);
-  crystals.push({ mesh, phase: Math.random() * Math.PI * 2 });
-}
-
-function spawnEnemy(isElite = false) {
-  const radius = isElite ? 1.15 : 0.85;
-  const geo = isElite
-    ? new THREE.DodecahedronGeometry(radius, 0)
-    : new THREE.IcosahedronGeometry(radius, 0);
-
-  const colorHex = isElite ? 0xffaa00 : 0xff0055;
-  const mat = new THREE.MeshStandardMaterial({
-    color: colorHex,
-    emissive: colorHex,
-    emissiveIntensity: 1.8,
-    roughness: 0.25,
-    metalness: 0.7,
-    wireframe: isElite
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-
-  // Спавн ближе к границе арены, подальше от игрока
-  let angle = Math.random() * Math.PI * 2;
-  let spawnPos = new THREE.Vector3(
-    Math.cos(angle) * (ARENA_RADIUS - 1.8),
-    0.6,
-    Math.sin(angle) * (ARENA_RADIUS - 1.8)
-  );
-  if (spawnPos.distanceTo(state.pos) < 7) {
-    angle += Math.PI;
-    spawnPos.set(
-      Math.cos(angle) * (ARENA_RADIUS - 1.8),
-      0.6,
-      Math.sin(angle) * (ARENA_RADIUS - 1.8)
-    );
-  }
-  mesh.position.copy(spawnPos);
-  scene.add(mesh);
-
-  enemies.push({
-    mesh,
-    vel: new THREE.Vector3(),
-    radius,
-    isElite,
-    speed: isElite ? 18 + state.wave * 1.2 : 13 + state.wave * 0.9,
-    mass: isElite ? 1.8 : 1.0
-  });
-}
-
-function createExplosion(pos, colorHex, count = 22, speedScale = 1) {
-  const geo = new THREE.TetrahedronGeometry(0.24, 0);
-  for (let i = 0; i < count; i++) {
-    const mat = new THREE.MeshBasicMaterial({
-      color: colorHex,
-      transparent: true,
-      opacity: 1
-    });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.copy(pos);
-    const angle = Math.random() * Math.PI * 2;
-    const up = (Math.random() - 0.2) * 10;
-    const spd = (4 + Math.random() * 12) * speedScale;
-    const vel = new THREE.Vector3(Math.cos(angle) * spd, up, Math.sin(angle) * spd);
-    scene.add(mesh);
-    particles.push({ mesh, vel, life: 1.0, decay: 1.4 + Math.random() * 1.2 });
-  }
-
-  // Ударная волна по полу
-  const waveGeo = new THREE.RingGeometry(0.4, 0.75, 32);
-  const waveMat = new THREE.MeshBasicMaterial({
-    color: colorHex,
-    side: THREE.DoubleSide,
-    transparent: true,
-    opacity: 0.9
-  });
-  const waveMesh = new THREE.Mesh(waveGeo, waveMat);
-  waveMesh.rotation.x = Math.PI / 2;
-  waveMesh.position.set(pos.x, -0.4, pos.z);
-  scene.add(waveMesh);
-  shockwaves.push({ mesh: waveMesh, scale: 1, alpha: 0.9 });
-}
-
-// ==========================================
-// 7. УПРАВЛЕНИЕ: ТАЧ-ДЖОЙСТИК + СВАЙП / ДВОЙНОЙ ТАП
-// ==========================================
-const joyRing = document.getElementById('joystick-ring');
-const joyKnob = document.getElementById('joystick-knob');
-const dashBtn = document.getElementById('dash-btn');
-
+// =====================================================
+// 4. ВВОД: ТАЧСКРИН + КЛАВИАТУРА
+// =====================================================
 const input = {
-  active: false,
-  touchId: null,
-  originX: 0,
-  originY: 0,
-  vecX: 0,
-  vecY: 0,
-  lastTapTime: 0,
-  keys: {}
+  x: 0, y: 0,
+  jumpHeld: false,
+  jumpBuffer: 0,
+  atkBuffered: false,
+  dashBuffered: false,
+  usePressed: false
 };
 
-const MAX_JOY_RADIUS = 48;
+// Левый стик
+const stickZone = document.getElementById('stick-zone');
+const stickKnob = document.getElementById('stick-knob');
+let stickTouchId = null;
 
-function triggerDash() {
-  if (!state.running) return;
-  if (state.dashEnergy < 35 || state.dashTimer > 0) return;
-
-  sfx.play('dash');
-  state.dashEnergy = Math.max(0, state.dashEnergy - 45);
-  state.dashTimer = 0.36; // длительность тарана
-  state.invulnTimer = 0.45;
-  state.shake = 0.35;
-
-  // Направление рывка: по джойстику или по текущей скорости
-  let dir = new THREE.Vector3(input.vecX, 0, input.vecY);
-  if (dir.lengthSq() < 0.01) {
-    dir.copy(state.vel);
-    dir.y = 0;
-  }
-  if (dir.lengthSq() < 0.01) {
-    dir.set(0, 0, -1);
-  }
-  dir.normalize();
-
-  state.vel.copy(dir.multiplyScalar(34));
-  createExplosion(state.pos, 0x00f3ff, 12, 0.7);
-  if (navigator.vibrate) navigator.vibrate(30);
-}
-
-dashBtn.addEventListener('pointerdown', (e) => {
-  e.stopPropagation();
-  triggerDash();
+stickZone.addEventListener('pointerdown', (e) => {
+  stickTouchId = e.pointerId;
+  updateStick(e);
 });
-
-window.addEventListener('pointerdown', (e) => {
-  if (!state.running) return;
-  if (e.target === dashBtn || dashBtn.contains(e.target)) return;
-
-  const now = performance.now();
-  if (now - input.lastTapTime < 260) {
-    triggerDash();
-  }
-  input.lastTapTime = now;
-
-  if (!input.active) {
-    input.active = true;
-    input.touchId = e.pointerId;
-    input.originX = e.clientX;
-    input.originY = e.clientY;
-    input.vecX = 0;
-    input.vecY = 0;
-
-    joyRing.style.display = 'block';
-    joyRing.style.left = `${e.clientX}px`;
-    joyRing.style.top = `${e.clientY}px`;
-    joyKnob.style.transform = `translate(-50%, -50%)`;
-  }
-});
-
 window.addEventListener('pointermove', (e) => {
-  if (!input.active || e.pointerId !== input.touchId) return;
-  const dx = e.clientX - input.originX;
-  const dy = e.clientY - input.originY;
-  const dist = Math.hypot(dx, dy);
-  const clamped = Math.min(dist, MAX_JOY_RADIUS);
-  const angle = Math.atan2(dy, dx);
-
-  const kx = Math.cos(angle) * clamped;
-  const ky = Math.sin(angle) * clamped;
-  joyKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
-
-  input.vecX = kx / MAX_JOY_RADIUS;
-  input.vecY = ky / MAX_JOY_RADIUS;
+  if (e.pointerId === stickTouchId) updateStick(e);
 });
-
-function releaseJoystick(e) {
-  if (input.active && e.pointerId === input.touchId) {
-    input.active = false;
-    input.touchId = null;
-    input.vecX = 0;
-    input.vecY = 0;
-    joyRing.style.display = 'none';
+function releaseStick(e) {
+  if (e.pointerId === stickTouchId) {
+    stickTouchId = null;
+    input.x = 0; input.y = 0;
+    stickKnob.style.transform = `translate(-50%, -50%)`;
   }
 }
-window.addEventListener('pointerup', releaseJoystick);
-window.addEventListener('pointercancel', releaseJoystick);
+window.addEventListener('pointerup', releaseStick);
+window.addEventListener('pointercancel', releaseStick);
 
-// Поддержка клавиатуры на случай теста с ПК
+function updateStick(e) {
+  const rect = stickZone.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const dx = e.clientX - cx;
+  const dy = e.clientY - cy;
+  const maxR = 46;
+  const dist = Math.hypot(dx, dy);
+  const clamped = Math.min(dist, maxR);
+  const ang = Math.atan2(dy, dx);
+  const kx = Math.cos(ang) * clamped;
+  const ky = Math.sin(ang) * clamped;
+  stickKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+
+  const nx = kx / maxR;
+  const ny = ky / maxR;
+  input.x = Math.abs(nx) > 0.18 ? Math.sign(nx) * Math.min(1, (Math.abs(nx) - 0.15) / 0.7) : 0;
+  input.y = Math.abs(ny) > 0.35 ? Math.sign(ny) : 0;
+}
+
+// Правые кнопки слэшера
+function bindBtn(id, onDown, onUp) {
+  const el = document.getElementById(id);
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    el.classList.add('pressed');
+    onDown();
+  });
+  const end = () => {
+    el.classList.remove('pressed');
+    if (onUp) onUp();
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+  el.addEventListener('pointerleave', end);
+}
+
+bindBtn('btn-jmp', () => { input.jumpHeld = true; input.jumpBuffer = 0.15; }, () => { input.jumpHeld = false; });
+bindBtn('btn-atk', () => { input.atkBuffered = true; });
+bindBtn('btn-dash', () => { input.dashBuffered = true; });
+bindBtn('btn-use', () => { input.usePressed = true; });
+
+// Клавиатура (для отладки)
 window.addEventListener('keydown', (e) => {
-  input.keys[e.code] = true;
-  if (e.code === 'Space') triggerDash();
+  if (e.code === 'KeyA' || e.code === 'ArrowLeft') input.x = -1;
+  if (e.code === 'KeyD' || e.code === 'ArrowRight') input.x = 1;
+  if (e.code === 'KeyS' || e.code === 'ArrowDown') input.y = 1;
+  if (e.code === 'Space' || e.code === 'KeyW') {
+    if (!input.jumpHeld) input.jumpBuffer = 0.15;
+    input.jumpHeld = true;
+  }
+  if (e.code === 'KeyJ' || e.code === 'KeyK') input.atkBuffered = true;
+  if (e.code === 'ShiftLeft' || e.code === 'KeyL') input.dashBuffered = true;
+  if (e.code === 'KeyE') input.usePressed = true;
 });
 window.addEventListener('keyup', (e) => {
-  input.keys[e.code] = false;
+  if (e.code === 'KeyA' || e.code === 'ArrowLeft') if (input.x < 0) input.x = 0;
+  if (e.code === 'KeyD' || e.code === 'ArrowRight') if (input.x > 0) input.x = 0;
+  if (e.code === 'KeyS' || e.code === 'ArrowDown') input.y = 0;
+  if (e.code === 'Space' || e.code === 'KeyW') input.jumpHeld = false;
 });
 
-// ==========================================
-// 8. ЗАПУСК И ПЕРЕЗАПУСК ИГРЫ
-// ==========================================
-const overlay = document.getElementById('overlay');
-const startBtn = document.getElementById('start-btn');
-const scoreVal = document.getElementById('score-val');
-const comboVal = document.getElementById('combo-val');
-const hpFill = document.getElementById('hp-fill');
-const hpText = document.getElementById('hp-text');
-const dashFill = document.getElementById('dash-fill');
-const waveText = document.getElementById('wave-text');
-const finalScoreBox = document.getElementById('final-score-box');
-const finalScoreVal = document.getElementById('final-score-val');
-const damageFlash = document.getElementById('damage-flash');
+// =====================================================
+// 5. ИГРОВОЙ МИР, ПРОЦЕДУРНАЯ ГЕНЕРАЦИЯ ЗАЛОВ И ЧАСТИЦ
+// =====================================================
+let hitstopTimer = 0; // микро-пауза при попадании мечом (Game Feel!)
+const cam = { x: 0, y: 0, shake: 0 };
 
-function resetGame() {
-  sfx.init();
-  // Очистка старых объектов
-  enemies.forEach(e => scene.remove(e.mesh));
-  crystals.forEach(c => scene.remove(c.mesh));
-  particles.forEach(p => scene.remove(p.mesh));
-  shockwaves.forEach(w => scene.remove(w.mesh));
-  enemies.length = 0;
-  crystals.length = 0;
-  particles.length = 0;
-  shockwaves.length = 0;
+const player = {
+  x: 160, y: 300, w: 28, h: 48,
+  vx: 0, vy: 0,
+  facing: 1,
+  grounded: false,
+  coyoteTimer: 0,
+  wallDir: 0,
+  moveSpeed: 330,
+  hp: 100, maxHp: 100,
+  dmg: 22,
+  critChance: 0.15,
+  vampOnKill: 0,
+  rangeBonus: 0,
+  chainLightning: false,
+  souls: 0,
+  relics: [],
+  // Боёвка и стейты
+  comboStep: 0,
+  comboWindow: 0,
+  atkTimer: 0,
+  downSmash: false,
+  dashTimer: 0,
+  dashCd: 0,
+  dashCdMax: 0.65,
+  invuln: 0,
+  scarf: [] // физический развевающийся плащ/шарф
+};
+for (let i = 0; i < 7; i++) player.scarf.push({ x: player.x, y: player.y });
 
-  state.score = 0;
-  state.combo = 1;
-  state.comboTimer = 0;
-  state.wave = 1;
-  state.hp = 100;
-  state.dashEnergy = 100;
-  state.dashTimer = 0;
-  state.invulnTimer = 0;
-  state.pos.set(0, 0.6, 0);
-  state.vel.set(0, 0, 0);
-  state.running = true;
+let roomIndex = 1;
+let platforms = [];
+let enemies = [];
+let particles = [];
+let slashArcs = [];
+let floatTexts = [];
+let shrine = null;
+let portal = null;
+let bgPillars = [];
 
-  for (let i = 0; i < 4; i++) spawnCrystal();
-  for (let i = 0; i < 4; i++) spawnEnemy(false);
+function spawnParticles(x, y, color, count = 12, speed = 220, gravity = 500) {
+  for (let i = 0; i < count; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const spd = (0.3 + Math.random() * 0.8) * speed;
+    particles.push({
+      x, y,
+      vx: Math.cos(ang) * spd,
+      vy: Math.sin(ang) * spd - 60,
+      size: 2.5 + Math.random() * 4,
+      color,
+      gravity,
+      life: 0.35 + Math.random() * 0.35,
+      maxLife: 0.7
+    });
+  }
+}
 
-  overlay.style.display = 'none';
+function addFloatText(x, y, text, color = '#f5efe6', big = false) {
+  floatTexts.push({ x, y, text, color, big, vy: -90, life: 0.75 });
+}
+
+// Процедурный генератор зала (платформы, стены для паркура, враги, святилище)
+function generateRoom(num) {
+  roomIndex = num;
+  platforms = [];
+  enemies = [];
+  particles = [];
+  slashArcs = [];
+  bgPillars = [];
+
+  const roomW = 1900 + num * 180;
+  const floorY = 460;
+
+  // Основной каменный пол и потолок/стены по краям
+  platforms.push({ x: -120, y: floorY, w: roomW + 240, h: 180, type: 'solid' });
+  platforms.push({ x: -120, y: -300, w: 120, h: 900, type: 'wall' });
+  platforms.push({ x: roomW, y: -300, w: 120, h: 900, type: 'wall' });
+
+  // Фоновые готические колонны
+  for (let x = 150; x < roomW; x += 260) {
+    bgPillars.push({ x, w: 48 + (x % 30), h: 520 });
+  }
+
+  // Генерация паркур-секций, башен для Wall-Jump и платформ
+  let cursorX = 280;
+  while (cursorX < roomW - 380) {
+    const pat = Math.floor(Math.random() * 3);
+    if (pat === 0) {
+      // Двухуровневые платформы
+      platforms.push({ x: cursorX, y: floorY - 115, w: 190, h: 22, type: 'plat' });
+      platforms.push({ x: cursorX + 90, y: floorY - 235, w: 160, h: 22, type: 'plat' });
+      spawnEnemyAt(cursorX + 95, floorY - 115, num);
+      cursorX += 340;
+    } else if (pat === 1) {
+      // Каменная колонна для отскока от стен (Wall Jump)
+      platforms.push({ x: cursorX + 40, y: floorY - 250, w: 44, h: 250, type: 'wall' });
+      platforms.push({ x: cursorX + 160, y: floorY - 210, w: 170, h: 22, type: 'plat' });
+      spawnEnemyAt(cursorX + 230, floorY - 210, num);
+      cursorX += 390;
+    } else {
+      // Арена с надстройкой
+      platforms.push({ x: cursorX, y: floorY - 145, w: 250, h: 24, type: 'plat' });
+      spawnEnemyAt(cursorX + 120, floorY - 145, num);
+      spawnEnemyAt(cursorX + 180, floorY, num);
+      cursorX += 360;
+    }
+    // Враги на первом ярусе
+    if (Math.random() < 0.85) spawnEnemyAt(cursorX - 120, floorY, num);
+  }
+
+  // Алтарь реликвии в середине зала
+  shrine = {
+    x: Math.floor(roomW * 0.48),
+    y: floorY,
+    used: false
+  };
+
+  // Врата в следующий зал в конце уровня
+  portal = {
+    x: roomW - 140,
+    y: floorY
+  };
+
+  player.x = 110;
+  player.y = floorY - player.h;
+  player.vx = 0; player.vy = 0;
   updateHUD();
 }
 
-function gameOver() {
-  state.running = false;
-  input.active = false;
-  joyRing.style.display = 'none';
-  finalScoreBox.style.display = 'block';
-  finalScoreVal.textContent = Math.floor(state.score);
-  startBtn.textContent = 'ИГРАТЬ СНОВА';
-  overlay.style.display = 'flex';
+function spawnEnemyAt(x, groundY, level) {
+  const types = ['stalker', 'warden', 'wraith'];
+  const type = types[Math.floor(Math.random() * types.length)];
+  const isWarden = type === 'warden';
+  const isWraith = type === 'wraith';
+
+  const w = isWarden ? 38 : 28;
+  const h = isWarden ? 56 : (isWraith ? 42 : 46);
+  const maxHp = Math.round((isWarden ? 95 : (isWraith ? 55 : 65)) * (1 + (level - 1) * 0.25));
+
+  enemies.push({
+    type,
+    x, y: groundY - h, w, h,
+    vx: 0, vy: 0,
+    hp: maxHp, maxHp,
+    dmg: Math.round((isWarden ? 24 : 15) * (1 + (level - 1) * 0.18)),
+    facing: -1,
+    state: 'patrol',
+    timer: 0,
+    atkCooldown: 0,
+    flashTimer: 0
+  });
 }
 
-startBtn.addEventListener('click', resetGame);
+// =====================================================
+// 6. БОЕВАЯ СИСТЕМА И РЕЛИКВИИ
+// =====================================================
+function performAttack() {
+  input.atkBuffered = false;
 
-function updateHUD() {
-  scoreVal.textContent = Math.floor(state.score);
-  comboVal.textContent = state.combo > 1 ? `КОМБО x${state.combo}` : '';
-  hpFill.style.width = `${Math.max(0, state.hp)}%`;
-  hpText.textContent = `${Math.ceil(Math.max(0, state.hp))}%`;
-  dashFill.style.width = `${Math.min(100, state.dashEnergy)}%`;
-  waveText.textContent = `ВОЛНА ${state.wave}`;
-  dashBtn.style.opacity = state.dashEnergy >= 35 ? '1' : '0.4';
-}
+  // Удар в падении (Down-Smash), если в воздухе зажат стик вниз
+  if (!player.grounded && input.y > 0.4) {
+    player.downSmash = true;
+    player.vy = 680;
+    player.atkTimer = 0.35;
+    sfx.slash(3);
+    return;
+  }
 
-// ==========================================
-// 9. ГЛАВНЫЙ ФИЗИЧЕСКИЙ И ИГРОВОЙ ЦИКЛ
-// ==========================================
-let lastTime = performance.now();
-let spawnAccumulator = 0;
+  if (player.comboWindow > 0) {
+    player.comboStep = (player.comboStep % 3) + 1;
+  } else {
+    player.comboStep = 1;
+  }
 
-function animate(now) {
-  requestAnimationFrame(animate);
-  const dt = Math.min((now - lastTime) / 1000, 0.05);
-  lastTime = now;
+  const isFinisher = player.comboStep === 3;
+  player.atkTimer = isFinisher ? 0.24 : 0.16;
+  player.comboWindow = 0.52;
 
-  // Анимация фоновых монолитов
-  pillars.forEach(p => {
-    p.mesh.position.y = p.baseY + Math.sin(now * 0.002 + p.phase) * 1.1;
-    p.mesh.rotation.y += dt * 0.3;
+  // Выпад вперёд при взмахе
+  player.vx = player.facing * (isFinisher ? 340 : 190);
+  sfx.slash(player.comboStep);
+
+  const reach = (isFinisher ? 78 : 60) + player.rangeBonus;
+  const hitX = player.facing === 1 ? player.x + player.w * 0.5 : player.x + player.w * 0.5 - reach;
+  const hitY = player.y - 8;
+  const hitW = reach;
+  const hitH = player.h + 16;
+
+  // Дуга взмаха для рендера
+  slashArcs.push({
+    x: player.x + player.w / 2,
+    y: player.y + player.h / 2,
+    dir: player.facing,
+    step: player.comboStep,
+    radius: reach,
+    life: 0.16,
+    maxLife: 0.16
   });
 
-  if (state.running) {
-    // 1. Вектор управления (тач + клавиатура)
-    let moveX = input.vecX;
-    let moveZ = input.vecY;
-    if (input.keys['KeyW'] || input.keys['ArrowUp']) moveZ -= 1;
-    if (input.keys['KeyS'] || input.keys['ArrowDown']) moveZ += 1;
-    if (input.keys['KeyA'] || input.keys['ArrowLeft']) moveX -= 1;
-    if (input.keys['KeyD'] || input.keys['ArrowRight']) moveX += 1;
+  // Проверка попадания по врагам
+  let hitAny = false;
+  enemies.forEach(e => {
+    if (rectOverlap(hitX, hitY, hitW, hitH, e.x, e.y, e.w, e.h)) {
+      hitAny = true;
+      const isCrit = isFinisher || Math.random() < player.critChance;
+      const dmg = Math.round(player.dmg * (isFinisher ? 1.45 : 1.0) * (isCrit ? 1.75 : 1.0));
+      damageEnemy(e, dmg, player.facing * (isFinisher ? 340 : 210), isCrit);
 
-    // 2. Таймеры тарана и комбо
-    if (state.dashTimer > 0) state.dashTimer -= dt;
-    if (state.invulnTimer > 0) state.invulnTimer -= dt;
-    if (state.comboTimer > 0) {
-      state.comboTimer -= dt;
-      if (state.comboTimer <= 0) state.combo = 1;
-    }
-
-    const isDashing = state.dashTimer > 0;
-    state.dashEnergy = Math.min(100, state.dashEnergy + dt * 16);
-
-    // 3. Физика движения игрока с инерцией
-    const accel = isDashing ? 12 : 42;
-    state.vel.x += moveX * accel * dt;
-    state.vel.z += moveZ * accel * dt;
-
-    // Сопротивление среды
-    const damping = isDashing ? 0.985 : 0.91;
-    state.vel.multiplyScalar(Math.pow(damping, dt * 60));
-
-    state.pos.addScaledVector(state.vel, dt);
-
-    // Упругое столкновение с границей круглой арены
-    const distFromCenter = Math.hypot(state.pos.x, state.pos.z);
-    if (distFromCenter > ARENA_RADIUS - state.radius) {
-      const nx = state.pos.x / distFromCenter;
-      const nz = state.pos.z / distFromCenter;
-      state.pos.x = nx * (ARENA_RADIUS - state.radius);
-      state.pos.z = nz * (ARENA_RADIUS - state.radius);
-
-      // Отражение вектора скорости от борта
-      const dot = state.vel.x * nx + state.vel.z * nz;
-      if (dot > 0) {
-        state.vel.x -= 1.7 * dot * nx;
-        state.vel.z -= 1.7 * dot * nz;
-        state.shake = Math.max(state.shake, 0.12);
-      }
-    }
-
-    // Визуал ядра игрока
-    playerGroup.position.copy(state.pos);
-    coreMesh.rotation.x += state.vel.z * dt * 1.4;
-    coreMesh.rotation.z -= state.vel.x * dt * 1.4;
-    shellMesh.rotation.y -= dt * (isDashing ? 14 : 3);
-    shellMesh.rotation.x += dt * 2;
-
-    if (isDashing) {
-      coreMat.emissive.setHex(0x00ffaa);
-      coreMat.emissiveIntensity = 3.5;
-      auraMat.opacity = 0.85;
-      auraMesh.scale.setScalar(1 + Math.sin(now * 0.04) * 0.15);
-    } else {
-      coreMat.emissive.setHex(0x00f3ff);
-      coreMat.emissiveIntensity = 2.0;
-      auraMat.opacity = 0.0;
-    }
-
-    playerLight.position.set(state.pos.x, 2.2, state.pos.z);
-
-    // Шлейф за игроком на высокой скорости
-    if (state.vel.lengthSq() > 25) {
-      const trailGeo = new THREE.OctahedronGeometry(isDashing ? 0.38 : 0.2, 0);
-      const trailMat = new THREE.MeshBasicMaterial({
-        color: isDashing ? 0x00ffaa : 0x00f3ff,
-        transparent: true,
-        opacity: 0.75
-      });
-      const tMesh = new THREE.Mesh(trailGeo, trailMat);
-      tMesh.position.copy(state.pos);
-      scene.add(tMesh);
-      trailParticles.push({ mesh: tMesh, life: 0.28 });
-    }
-
-    // 4. Сбор энергетических кубов
-    for (let i = crystals.length - 1; i >= 0; i--) {
-      const c = crystals[i];
-      c.mesh.rotation.y += dt * 3;
-      c.mesh.rotation.x += dt * 1.8;
-      c.mesh.position.y = 0.65 + Math.sin(now * 0.005 + c.phase) * 0.25;
-
-      if (c.mesh.position.distanceTo(state.pos) < state.radius + 0.75) {
-        sfx.play('pickup');
-        state.score += 50 * state.combo;
-        state.dashEnergy = Math.min(100, state.dashEnergy + 28);
-        state.hp = Math.min(100, state.hp + 6);
-        createExplosion(c.mesh.position, 0x00ffaa, 14, 0.8);
-        scene.remove(c.mesh);
-        crystals.splice(i, 1);
-        spawnCrystal();
-      }
-    }
-
-    // 5. ИИ и физика врагов
-    for (let i = enemies.length - 1; i >= 0; i--) {
-      const e = enemies[i];
-      const toPlayer = new THREE.Vector3().subVectors(state.pos, e.mesh.position);
-      toPlayer.y = 0;
-      const dist = toPlayer.length();
-      if (dist > 0.001) toPlayer.divideScalar(dist);
-
-      e.vel.addScaledVector(toPlayer, e.speed * dt);
-      e.vel.multiplyScalar(Math.pow(0.92, dt * 60));
-      e.mesh.position.addScaledVector(e.vel, dt);
-      e.mesh.rotation.x += dt * 3.5;
-      e.mesh.rotation.y += dt * 2.5;
-
-      // Отталкивание врагов друг от друга (физическая толпа)
-      for (let j = i - 1; j >= 0; j--) {
-        const other = enemies[j];
-        const diff = new THREE.Vector3().subVectors(e.mesh.position, other.mesh.position);
-        diff.y = 0;
-        const d = diff.length();
-        const minDist = e.radius + other.radius;
-        if (d > 0 && d < minDist) {
-          diff.normalize();
-          const overlap = minDist - d;
-          e.mesh.position.addScaledVector(diff, overlap * 0.5);
-          other.mesh.position.addScaledVector(diff, -overlap * 0.5);
-        }
-      }
-
-      // Столкновение с игроком
-      const hitDist = state.radius + e.radius;
-      if (e.mesh.position.distanceTo(state.pos) < hitDist) {
-        if (isDashing) {
-          // УНИЧТОЖЕНИЕ ВРАГА ТАРАНОМ
-          sfx.play('kill');
-          state.combo++;
-          state.comboTimer = 3.2;
-          state.score += (e.isElite ? 250 : 100) * state.combo;
-          state.dashEnergy = Math.min(100, state.dashEnergy + 35);
-          state.dashTimer = Math.min(0.4, state.dashTimer + 0.12); // продление рывка при килле
-          state.shake = 0.55;
-          createExplosion(e.mesh.position, e.isElite ? 0xffaa00 : 0xff0055, 28, 1.35);
-          scene.remove(e.mesh);
-          enemies.splice(i, 1);
-          if (navigator.vibrate) navigator.vibrate([25, 30, 45]);
-        } else if (state.invulnTimer <= 0) {
-          // ПОЛУЧЕНИЕ УРОНА И УПРУГИЙ ОТСКОК
-          sfx.play('hit');
-          state.hp -= e.isElite ? 26 : 18;
-          state.invulnTimer = 0.55;
-          state.combo = 1;
-          state.shake = 0.65;
-
-          const knockDir = new THREE.Vector3().subVectors(state.pos, e.mesh.position).normalize();
-          state.vel.addScaledVector(knockDir, 22);
-          e.vel.addScaledVector(knockDir, -18);
-
-          damageFlash.style.opacity = '1';
-          setTimeout(() => { damageFlash.style.opacity = '0'; }, 140);
-          createExplosion(state.pos, 0xff0055, 16, 0.9);
-          if (navigator.vibrate) navigator.vibrate(120);
-
-          if (state.hp <= 0) {
-            gameOver();
-            break;
+      // Цепная молния от реликвии
+      if (isFinisher && player.chainLightning) {
+        enemies.forEach(other => {
+          if (other !== e && Math.hypot(other.x - e.x, other.y - e.y) < 220) {
+            damageEnemy(other, Math.round(dmg * 0.6), player.facing * 150, false, '#6ab0e8');
           }
-        }
+        });
       }
     }
+  });
 
-    // 6. Спавн новых волн врагов
-    spawnAccumulator += dt;
-    const waveInterval = Math.max(1.2, 3.2 - state.wave * 0.18);
-    if (spawnAccumulator >= waveInterval) {
-      spawnAccumulator = 0;
-      if (enemies.length < 12 + state.wave * 2) {
-        const eliteChance = Math.min(0.45, state.wave * 0.06);
-        spawnEnemy(Math.random() < eliteChance);
-      }
-    }
-
-    // Повышение волны от набранных очков
-    state.wave = 1 + Math.floor(state.score / 1200);
-    updateHUD();
+  if (hitAny) {
+    hitstopTimer = isFinisher ? 0.065 : 0.035;
+    cam.shake = isFinisher ? 9 : 4.5;
+    if (navigator.vibrate) navigator.vibrate(isFinisher ? 35 : 15);
   }
-
-  // 7. Обновление частиц, шлейфа и ударных волн
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.vel.y -= 24 * dt; // гравитация осколков
-    p.mesh.position.addScaledVector(p.vel, dt);
-    if (p.mesh.position.y < -0.4) {
-      p.mesh.position.y = -0.4;
-      p.vel.y *= -0.55; // отскок осколков от пола
-    }
-    p.mesh.rotation.x += dt * 8;
-    p.life -= p.decay * dt;
-    p.mesh.material.opacity = Math.max(0, p.life);
-    if (p.life <= 0) {
-      scene.remove(p.mesh);
-      particles.splice(i, 1);
-    }
-  }
-
-  for (let i = trailParticles.length - 1; i >= 0; i--) {
-    const t = trailParticles[i];
-    t.life -= dt;
-    t.mesh.scale.setScalar(Math.max(0.01, t.life * 3.2));
-    t.mesh.material.opacity = t.life * 2.5;
-    if (t.life <= 0) {
-      scene.remove(t.mesh);
-      trailParticles.splice(i, 1);
-    }
-  }
-
-  for (let i = shockwaves.length - 1; i >= 0; i--) {
-    const w = shockwaves[i];
-    w.scale += dt * 16;
-    w.alpha -= dt * 2.2;
-    w.mesh.scale.setScalar(w.scale);
-    w.mesh.material.opacity = Math.max(0, w.alpha);
-    if (w.alpha <= 0) {
-      scene.remove(w.mesh);
-      shockwaves.splice(i, 1);
-    }
-  }
-
-  // 8. Динамическая камера со слежением, FOV-эффектом и тряской
-  const targetCamX = state.pos.x * 0.45;
-  const targetCamZ = state.pos.z * 0.45 + 15.5;
-  camera.position.x += (targetCamX - camera.position.x) * 6 * dt;
-  camera.position.z += (targetCamZ - camera.position.z) * 6 * dt;
-
-  // Screen shake
-  if (state.shake > 0) {
-    camera.position.x += (Math.random() - 0.5) * state.shake * 1.4;
-    camera.position.z += (Math.random() - 0.5) * state.shake * 1.4;
-    state.shake = Math.max(0, state.shake - dt * 2.8);
-  }
-
-  // Расширение угла обзора при ускорении
-  const speedNorm = Math.min(1, state.vel.length() / 30);
-  const targetFov = 60 + speedNorm * 12;
-  camera.fov += (targetFov - camera.fov) * 8 * dt;
-  camera.updateProjectionMatrix();
-
-  camera.lookAt(state.pos.x * 0.3, 0, state.pos.z * 0.3);
-
-  composer.render();
 }
 
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  composer.setSize(window.innerWidth, window.innerHeight);
-});
+function damageEnemy(e, dmg, knockVx, isCrit, customColor = null) {
+  e.hp -= dmg;
+  e.vx = knockVx;
+  e.vy = -140;
+  e.flashTimer = 0.12;
+  // Сбиваем замах обычным врагам
+  if (e.type !== 'warden' || isCrit) e.state = 'stagger';
+  e.timer = 0.22;
 
-requestAnimationFrame(animate);
+  sfx.hit(isCrit);
+  spawnParticles(e.x + e.w / 2, e.y + e.h / 2, customColor || (isCrit ? '#ffbe42' : '#d93848'), isCrit ? 18 : 10, 280);
+  addFloatText(e.x + e.w / 2, e.y - 6, isCrit ? `${dmg}!` : `${dmg}`, isCrit ? '#ffbe42' : '#f5efe6', isCrit);
+
+  if (e.hp <= 0) {
+    spawnParticles(e.x + e.w / 2, e.y + e.h / 2, '#9e1b28', 24, 340);
+    player.souls += e.type === 'warden' ? 25 : 12;
+    if (player.vampOnKill > 0) {
+      player.hp = Math.min(player.maxHp, player.hp + player.vampOnKill);
+      addFloatText(player.x, player.y - 12, `+${player.vampOnKill} HP`, '#68e09c');
+    }
+  }
+}
+
+function rectOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+  return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+// Модальное окно выбора реликвии у Алтаря
+const relicModal = document.getElementById('relic-modal');
+const cardsContainer = document.getElementById('cards-container');
+let pausedForModal = false;
+
+function openRelicModal() {
+  pausedForModal = true;
+  cardsContainer.innerHTML = '';
+  const shuffled = [...RELIC_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
+  shuffled.forEach(rel => {
+    const card = document.createElement('div');
+    card.className = 'relic-card';
+    card.innerHTML = `<h4>${rel.name}</h4><p>${rel.desc}</p>`;
+    card.onclick = () => {
+      rel.apply(player);
+      player.relics.push(rel.name);
+      shrine.used = true;
+      pausedForModal = false;
+      relicModal.style.display = 'none';
+      spawnParticles(shrine.x, shrine.y - 30, '#c4a46c', 25, 260);
+      updateHUD();
+    };
+    cardsContainer.appendChild(card);
+  });
+  relicModal.style.display = 'flex';
+}
+
+// =====================================================
+// 7. ФИЗИКА И ОБНОВЛЕНИЕ СОСТОЯНИЯ
+// =====================================================
+const GRAVITY = 1550;
+
+function update(dt) {
+  if (pausedForModal) return;
+  if (hitstopTimer > 0) {
+    hitstopTimer -= dt;
+    return;
+  }
+
+  // Таймеры игрока
+  if (input.jumpBuffer > 0) input.jumpBuffer -= dt;
+  if (player.coyoteTimer > 0) player.coyoteTimer -= dt;
+  if (player.atkTimer > 0) player.atkTimer -= dt;
+  if (player.comboWindow > 0) player.comboWindow -= dt;
+  if (player.dashTimer > 0) player.dashTimer -= dt;
+  if (player.dashCd > 0) player.dashCd -= dt;
+  if (player.invuln > 0) player.invuln -= dt;
+
+  // 1. Рывок сквозь врагов (Dash с i-frames)
+  if (input.dashBuffered && player.dashCd <= 0 && player.dashTimer <= 0) {
+    input.dashBuffered = false;
+    player.dashTimer = 0.18;
+    player.dashCd = player.dashCdMax;
+    player.invuln = 0.24;
+    player.downSmash = false;
+    if (input.x !== 0) player.facing = Math.sign(input.x);
+    player.vx = player.facing * 690;
+    player.vy = 0;
+    sfx.dash();
+    spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#c4a46c', 10, 160, 0);
+  }
+  input.dashBuffered = false;
+
+  // 2. Атака
+  if (input.atkBuffered && player.atkTimer <= 0 && player.dashTimer <= 0) {
+    performAttack();
+  }
+
+  // 3. Горизонтальное движение
+  if (player.dashTimer <= 0 && player.atkTimer <= 0) {
+    if (input.x !== 0) {
+      player.facing = Math.sign(input.x);
+      const targetVx = input.x * player.moveSpeed;
+      player.vx += (targetVx - player.vx) * Math.min(1, dt * 18);
+    } else {
+      player.vx *= Math.pow(0.001, dt);
+    }
+  } else if (player.atkTimer > 0 && !player.downSmash) {
+    player.vx *= Math.pow(0.02, dt);
+  }
+
+  // 4. Гравитация и скольжение по стенам
+  if (player.dashTimer <= 0) {
+    let g = GRAVITY;
+    // Если отпустил кнопку прыжка на взлёте — режем высоту (Variable Jump)
+    if (player.vy < 0 && !input.jumpHeld) g *= 2.35;
+    if (player.vy > 0) g *= 1.25;
+    player.vy += g * dt;
+
+    // Замедленное скольжение по стене (Wall Slide)
+    if (player.wallDir !== 0 && !player.grounded && player.vy > 110 && Math.sign(input.x) === player.wallDir) {
+      player.vy = 110;
+      if (Math.random() < 0.35) {
+        spawnParticles(player.x + (player.wallDir > 0 ? player.w : 0), player.y + 15, '#7a7e8a', 1, 40, 100);
+      }
+    }
+  }
+
+  // 5. Прыжок (обычный с Coyote Time ИЛИ отскок от стены Wall Jump)
+  if (input.jumpBuffer > 0) {
+    if (player.coyoteTimer > 0) {
+      player.vy = -560;
+      player.grounded = false;
+      player.coyoteTimer = 0;
+      input.jumpBuffer = 0;
+      sfx.jump();
+      spawnParticles(player.x + player.w / 2, player.y + player.h, '#9296a0', 7, 120, 200);
+    } else if (player.wallDir !== 0 && !player.grounded) {
+      // Отскок от стены!
+      player.vy = -530;
+      player.vx = -player.wallDir * 420;
+      player.facing = -player.wallDir;
+      player.wallDir = 0;
+      input.jumpBuffer = 0;
+      sfx.jump();
+      spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#c4a46c', 9, 160, 200);
+    }
+  }
+
+  // 6. Перемещение и коллизии с платформами/стенами
+  player.x += player.vx * dt;
+  player.wallDir = 0;
+  for (const p of platforms) {
+    if (p.type !== 'plat' && rectOverlap(player.x, player.y, player.w, player.h, p.x, p.y, p.w, p.h)) {
+      if (player.vx > 0) {
+        player.x = p.x - player.w;
+        player.wallDir = 1;
+      } else if (player.vx < 0) {
+        player.x = p.x + p.w;
+        player.wallDir = -1;
+      }
+      player.vx = 0;
+    }
+  }
+
+  const prevBottom = player.y + player.h;
+  player.y += player.vy * dt;
+  player.grounded = false;
+
+  for (const p of platforms) {
+    if (p.type === 'plat') {
+      // Полупрозрачная платформа (можно запрыгнуть снизу или спрыгнуть вниз)
+      if (player.vy >= 0 && prevBottom <= p.y + 10 && !(input.y > 0.55) &&
+          rectOverlap(player.x, player.y, player.w, player.h, p.x, p.y, p.w, p.h)) {
+        landOn(p.y);
+      }
+    } else if (rectOverlap(player.x, player.y, player.w, player.h, p.x, p.y, p.w, p.h)) {
+      if (player.vy > 0) {
+        landOn(p.y);
+      } else if (player.vy < 0) {
+        player.y = p.y + p.h;
+        player.vy = 0;
+      }
+    }
+  }
+
+  function landOn(surfaceY) {
+    player.y = surfaceY - player.h;
+    if (player.downSmash) {
+      // Взрывная волна при приземлении с ударом в падении!
+      player.downSmash = false;
+      cam.shake = 11;
+      sfx.hit(true);
+      spawnParticles(player.x + player.w / 2, surfaceY, '#e05364', 24, 340);
+      enemies.forEach(e => {
+        if (Math.abs((e.x + e.w / 2) - (player.x + player.w / 2)) < 135 && Math.abs((e.y + e.h) - surfaceY) < 60) {
+          damageEnemy(e, Math.round(player.dmg * 1.6), Math.sign(e.x - player.x) * 320, true);
+        }
+      });
+    }
+    player.vy = 0;
+    player.grounded = true;
+    player.coyoteTimer = 0.12;
+  }
+
+  // Физика шарфа за спиной героя
+  let leadX = player.x + player.w / 2 - player.facing * 6;
+  let leadY = player.y + 10;
+  player.scarf.forEach((node, idx) => {
+    node.x += (leadX - node.x - player.facing * 5) * Math.min(1, dt * (22 - idx * 2));
+    node.y += (leadY - node.y + Math.sin(performance.now() * 0.015 + idx) * 2) * Math.min(1, dt * 18);
+    leadX = node.x; leadY = node.y;
+  });
+
+  // 7. Обновление врагов (ИИ, телеграф атаки, удары)
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const e = enemies[i];
+    if (e.hp <= 0) {
+      enemies.splice(i, 1);
+      continue;
+    }
+    if (e.flashTimer > 0) e.flashTimer -= dt;
+    if (e.atkCooldown > 0) e.atkCooldown -= dt;
+
+    const dx = (player.x + player.w / 2) - (e.x + e.w / 2);
+    const dy = (player.y + player.h / 2) - (e.y + e.h / 2);
+    const dist = Math.hypot(dx, dy);
+
+    if (e.state === 'stagger') {
+      e.timer -= dt;
+      e.vx *= Math.pow(0.01, dt);
+      if (e.timer <= 0) e.state = 'chase';
+    } else if (e.state === 'windup') {
+      // Фаза замаха (жёлтая/алая вспышка перед ударом — время для переката!)
+      e.vx *= 0.85;
+      e.timer -= dt;
+      if (e.timer <= 0) {
+        e.state = 'strike';
+        e.timer = 0.16;
+        e.vx = e.facing * (e.type === 'warden' ? 360 : 440);
+        // Проверка урона игроку
+        if (Math.abs(dx) < (e.type === 'warden' ? 75 : 58) && Math.abs(dy) < 52) {
+          hurtPlayer(e.dmg, e.facing * 280);
+        }
+      }
+    } else if (e.state === 'strike') {
+      e.timer -= dt;
+      if (e.timer <= 0) {
+        e.state = 'chase';
+        e.atkCooldown = e.type === 'warden' ? 1.15 : 0.75;
+      }
+    } else {
+      // Преследование игрока
+      if (dist < 420) {
+        e.facing = dx >= 0 ? 1 : -1;
+        const spd = e.type === 'warden' ? 115 : (e.type === 'wraith' ? 210 : 165);
+        if (Math.abs(dx) > 44) {
+          e.vx += (e.facing * spd - e.vx) * dt * 8;
+        } else if (e.atkCooldown <= 0 && Math.abs(dy) < 55) {
+          e.state = 'windup';
+          e.timer = e.type === 'warden' ? 0.48 : 0.34; // честное окно для уклонения!
+        }
+      } else {
+        e.vx *= 0.9;
+      }
+    }
+
+    // Физика врага
+    if (e.type !== 'wraith') {
+      e.vy += GRAVITY * dt;
+      e.x += e.vx * dt;
+      e.y += e.vy * dt;
+      for (const p of platforms) {
+        if (e.vy >= 0 && rectOverlap(e.x, e.y, e.w, e.h, p.x, p.y, p.w, p.h)) {
+          e.y = p.y - e.h;
+          e.vy = 0;
+        }
+      }
+    } else {
+      // Призрак парит по воздуху напрямую к герою
+      e.x += e.vx * dt;
+      const targetY = player.y - 6;
+      e.y += (targetY - e.y) * dt * 2.5;
+    }
+  }
+
+  // 8. Проверка интерактивных объектов (Алтарь и Врата)
+  const useBtn = document.getElementById('btn-use');
+  const nearShrine = shrine && !shrine.used && Math.hypot(player.x - shrine.x, (player.y + player.h) - shrine.y) < 75;
+  const nearPortal = portal && enemies.length === 0 && Math.hypot(player.x - portal.x, (player.y + player.h) - portal.y) < 85;
+
+  if (nearShrine || nearPortal) {
+    useBtn.style.display = 'flex';
+    useBtn.textContent = nearShrine ? 'ДАР' : 'ВРАТА';
+    if (input.usePressed) {
+      input.usePressed = false;
+      if (nearShrine) openRelicModal();
+      else if (nearPortal) generateRoom(roomIndex + 1);
+    }
+  } else {
+    useBtn.style.display = 'none';
+    input.usePressed = false;
+  }
+
+  // 9. Частицы, дуги меча и всплывающие цифры
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.vy += pt.gravity * dt;
+    pt.x += pt.vx * dt;
+    pt.y += pt.vy * dt;
+    pt.life -= dt;
+    if (pt.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = slashArcs.length - 1; i >= 0; i--) {
+    slashArcs[i].life -= dt;
+    if (slashArcs[i].life <= 0) slashArcs.splice(i, 1);
+  }
+  for (let i = floatTexts.length - 1; i >= 0; i--) {
+    const ft = floatTexts[i];
+    ft.y += ft.vy * dt;
+    ft.life -= dt;
+    if (ft.life <= 0) floatTexts.splice(i, 1);
+  }
+
+  // Плавная камера с упреждением по взгляду героя
+  const scale = H / VIEW_H;
+  const viewW = W / scale;
+  const targetCamX = player.x + player.w / 2 + player.facing * 65 - viewW / 2;
+  const targetCamY = player.y - VIEW_H * 0.58;
+  cam.x += (targetCamX - cam.x) * Math.min(1, dt * 8);
+  cam.y += (targetCamY - cam.y) * Math.min(1, dt * 6);
+  if (cam.shake > 0) cam.shake = Math.max(0, cam.shake - dt * 28);
+
+  updateHUD();
+}
+
+function hurtPlayer(dmg, knockVx) {
+  if (player.invuln > 0) return;
+  player.hp -= dmg;
+  player.invuln = 0.65;
+  player.vx = knockVx;
+  player.vy = -210;
+  cam.shake = 12;
+  sfx.hit(true);
+  spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#d93848', 18, 260);
+  addFloatText(player.x + player.w / 2, player.y - 10, `-${dmg}`, '#ff4d5e', true);
+  if (navigator.vibrate) navigator.vibrate(100);
+
+  if (player.hp <= 0) {
+    // Возрождение в Зале I (рогалик-цикл)
+    player.hp = 100; player.maxHp = 100;
+    player.dmg = 22; player.critChance = 0.15;
+    player.vampOnKill = 0; player.rangeBonus = 0;
+    player.chainLightning = false;
+    player.relics = [];
+    player.souls = 0;
+    generateRoom(1);
+  }
+}
+
+function updateHUD() {
+  const pct = Math.max(0, (player.hp / player.maxHp) * 100);
+  document.getElementById('hp-Fill').style.width = `${pct}%`;
+  document.getElementById('hp-Lag').style.width = `${pct}%`;
+  document.getElementById('hp-txt').textContent = `${Math.max(0, Math.ceil(player.hp))} / ${player.maxHp}`;
+  document.getElementById('atk-txt').textContent = `УРОН: ${player.dmg}`;
+  document.getElementById('souls-txt').textContent = `ПЕПЕЛ: ${player.souls}`;
+  document.getElementById('room-name').textContent = `ЗАЛ ${roomIndex} — ЦИТАДЕЛЬ ПЕПЛА`;
+  document.getElementById('room-status').textContent = enemies.length > 0
+    ? `Врагов в зале: ${enemies.length}`
+    : `Зал очищен — Врата открыты!`;
+  document.getElementById('relics-list').innerHTML = player.relics.map(r => `<span class="relic-tag">${r}</span>`).join('');
+}
+
+// =====================================================
+// 8. ОТРИСОВКА МИРА (ГОТИЧЕСКИЙ СЕРЫЙ ФЭНТЕЗИ-РЕНДЕР)
+// =====================================================
+function render() {
+  ctx.fillStyle = '#0b0c10';
+  ctx.fillRect(0, 0, W, H);
+
+  const scale = H / VIEW_H;
+  ctx.save();
+  ctx.scale(scale, scale);
+
+  const sx = (Math.random() - 0.5) * cam.shake;
+  const sy = (Math.random() - 0.5) * cam.shake;
+  ctx.translate(-cam.x + sx, -cam.y + sy);
+
+  // 1. Параллакс-колонны на фоне
+  ctx.fillStyle = '#12141c';
+  bgPillars.forEach(b => {
+    const px = b.x + cam.x * 0.25;
+    ctx.fillRect(px, 40, b.w, b.h);
+    ctx.fillStyle = '#191c26';
+    ctx.fillRect(px + 6, 40, 8, b.h);
+    ctx.fillStyle = '#12141c';
+  });
+
+  // 2. Алтарь реликвий
+  if (shrine) {
+    ctx.fillStyle = shrine.used ? '#2b2d38' : '#c4a46c';
+    ctx.beginPath();
+    ctx.moveTo(shrine.x - 18, shrine.y);
+    ctx.lineTo(shrine.x, shrine.y - 54);
+    ctx.lineTo(shrine.x + 18, shrine.y);
+    ctx.closePath();
+    ctx.fill();
+    if (!shrine.used) {
+      ctx.fillStyle = 'rgba(196, 164, 108, 0.22)';
+      ctx.beginPath();
+      ctx.arc(shrine.x, shrine.y - 32, 34 + Math.sin(performance.now() * 0.006) * 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 3. Врата в следующий зал
+  if (portal) {
+    const active = enemies.length === 0;
+    ctx.strokeStyle = active ? '#68e09c' : '#3a3d4a';
+    ctx.lineWidth = 5;
+    ctx.strokeRect(portal.x - 24, portal.y - 76, 48, 76);
+    if (active) {
+      ctx.fillStyle = 'rgba(104, 224, 156, 0.25)';
+      ctx.fillRect(portal.x - 20, portal.y - 72, 40, 72);
+    }
+  }
+
+  // 4. Платформы и каменная кладка
+  platforms.forEach(p => {
+    ctx.fillStyle = p.type === 'plat' ? '#2c303d' : '#181a22';
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.strokeStyle = p.type === 'plat' ? '#687089' : '#35394a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(p.x, p.y, p.w, p.h);
+  });
+
+  // 5. Враги
+  enemies.forEach(e => {
+    ctx.save();
+    // Телеграф замаха перед атакой!
+    if (e.state === 'windup') {
+      ctx.fillStyle = 'rgba(255, 190, 66, 0.35)';
+      ctx.beginPath();
+      ctx.arc(e.x + e.w / 2, e.y + e.h / 2, e.w, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = e.flashTimer > 0
+      ? '#ffffff'
+      : (e.type === 'warden' ? '#6e222e' : (e.type === 'wraith' ? '#4a6b82' : '#4a3b4e'));
+    ctx.fillRect(e.x, e.y, e.w, e.h);
+
+    // Горящий глаз врага
+    ctx.fillStyle = e.state === 'windup' ? '#ffbe42' : '#ff334b';
+    const eyeX = e.facing === 1 ? e.x + e.w - 8 : e.x + 4;
+    ctx.fillRect(eyeX, e.y + 10, 5, 5);
+
+    // Полоска HP над врагом
+    if (e.hp < e.maxHp) {
+      ctx.fillStyle = '#1a1416';
+      ctx.fillRect(e.x - 4, e.y - 10, e.w + 8, 5);
+      ctx.fillStyle = '#d93848';
+      ctx.fillRect(e.x - 4, e.y - 10, (e.w + 8) * (e.hp / e.maxHp), 5);
+    }
+    ctx.restore();
+  });
+
+  // 6. Развевающийся шарф и сам Пепельный Страж
+  ctx.strokeStyle = '#b82838';
+  ctx.lineWidth = 7;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  player.scarf.forEach((n, idx) => {
+    if (idx === 0) ctx.moveTo(n.x, n.y);
+    else ctx.lineTo(n.x, n.y);
+  });
+  ctx.stroke();
+
+  ctx.save();
+  if (player.invuln > 0 && Math.floor(performance.now() / 45) % 2 === 0) {
+    ctx.globalAlpha = 0.45;
+  }
+  // Плащ и броня героя
+  ctx.fillStyle = player.dashTimer > 0 ? '#f0dbb0' : '#d8d4cc';
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+  // Визор шлема
+  ctx.fillStyle = '#00f3ff';
+  const visorX = player.facing === 1 ? player.x + player.w - 9 : player.x + 2;
+  ctx.fillRect(visorX, player.y + 9, 7, 4);
+  ctx.restore();
+
+  // 7. Дуги рассечения мечом (Slash Trails)
+  slashArcs.forEach(s => {
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.scale(s.dir, 1);
+    const alpha = s.life / s.maxLife;
+    ctx.strokeStyle = s.step === 3 ? `rgba(255, 190, 66, ${alpha})` : `rgba(240, 245, 255, ${alpha})`;
+    ctx.lineWidth = s.step === 3 ? 14 : 9;
+    ctx.beginPath();
+    if (s.step === 2) {
+      ctx.arc(0, 0, s.radius * 0.78, Math.PI * 0.65, -Math.PI * 0.55, true);
+    } else {
+      ctx.arc(0, 0, s.radius * 0.78, -Math.PI * 0.55, Math.PI * 0.55, false);
+    }
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  // 8. Частицы и цифры урона
+  particles.forEach(pt => {
+    ctx.fillStyle = pt.color;
+    ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
+    ctx.fillRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size);
+  });
+  ctx.globalAlpha = 1;
+
+  floatTexts.forEach(ft => {
+    ctx.font = ft.big ? '900 18px sans-serif' : '700 14px sans-serif';
+    ctx.fillStyle = ft.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(ft.text, ft.x, ft.y);
+  });
+
+  ctx.restore();
+}
+
+// Старт игры
+generateRoom(1);
+let prev = performance.now();
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.033, (now - prev) / 1000);
+  prev = now;
+  update(dt);
+  render();
+}
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
