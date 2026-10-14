@@ -1,22 +1,23 @@
-// src/sprites.js — Пиксельные части скелета, оружие, враги и объекты
+// src/sprites.js — Пиксельные сегменты для 14-суставного скелета, органов, оружия и мира
 
 const PALETTE = {
   '.': null,
-  'k': '#0a0b10', // контур
-  's': '#4a5162', // тёмная сталь
-  'm': '#7b849b', // средняя сталь
-  'l': '#bcc6de', // светлая сталь
-  'w': '#ffffff', // блик
-  'c': '#00f3ff', // визор / молния
+  'k': '#08090d', // глубокий контур
+  's': '#3d4352', // тёмная сталь
+  'm': '#6c758c', // средняя сталь
+  'l': '#aeb8d1', // светлая сталь
+  'w': '#ffffff', // яркий блик
+  'c': '#00f3ff', // визор
   'b': '#3b688c', // призрак
-  'r': '#9e1e2e', // багровая ткань
-  'R': '#e6394e', // алый
-  'g': '#c4a46c', // золото / кость
-  'G': '#f2d899', // светлая кость
-  'd': '#232630', // поддоспешник
-  'p': '#392836', // тёмная броня
+  'r': '#8f1928', // багровая ткань / венозная кровь
+  'R': '#e03448', // алая кровь / плоть
+  'p': '#d46a7e', // кишки / внутренности
+  'g': '#c4a46c', // старое золото / кость
+  'G': '#ede0c8', // светлая кость / череп
+  'd': '#1f222b', // поддоспешник / кожа
+  'e': '#382633', // броня палача
   'o': '#ffae38', // огонь
-  'u': '#5c3c24', // дерево бочки
+  'u': '#5c3c24', // тёмное дерево
   'U': '#825836'  // светлое дерево
 };
 
@@ -34,40 +35,106 @@ function compileSprite(grid) {
   return off;
 }
 
-// 1. ЧАСТИ ТЕЛА РЫЦАРЯ ДЛЯ АКТИВНОГО СКЕЛЕТА (RIG)
 window.SPRITES = {
-  // Рогатый рыцарский шлем (10x9)
-  head: compileSprite([
-    ".kk....kk.",
-    ".kskkkksk.",
-    ".ksmlllmsk",
-    ".ksmmmccwk",
-    ".ksmssssmk",
-    "..kkkkkkk."
+  // --- СЕГМЕНТЫ РЫЦАРЯ (КРУПНАЯ ДЕТАЛИЗАЦИЯ) ---
+  knightHead: compileSprite([
+    "..kk......kk..",
+    ".ksskkkkkkssk.",
+    ".ksmllllllmsk.",
+    ".ksmmmmmmmmssk",
+    ".ksmmmccccwmsk",
+    ".ksmsssssssmsk",
+    "..ksmGGGGgmsk.",
+    "...kkkkkkkkk.."
   ]),
-  // Латный торс с наплечником и поясом (10x11)
-  torso: compileSprite([
-    ".krrrrrrk.",
-    "krrlmmmlrk",
-    "krsmlllmsr",
-    ".ksmgggmsk",
-    ".ksmdddmsk",
-    ".kgggggggk",
-    "..kdddddk."
+  knightChest: compileSprite([
+    "..krrrrrrrrk..",
+    ".krrlmmmmmlrk.",
+    "krrsmllllllmsr",
+    "kr.ksmmmmmmsk.",
+    "...ksmggggmsk.",
+    "...ksmddddmsk.",
+    "....kkkkkkkk.."
   ]),
-  // Латный сапог / стопа (6x5)
-  foot: compileSprite([
+  knightPelvis: compileSprite([
+    ".kggggggggk.",
+    ".kdrkddkrdk.",
+    "..kk....kk.."
+  ]),
+  knightUpperArm: compileSprite([
+    ".kssk.",
+    "ksmlsk",
+    "ksmmsk",
+    "kddddk",
+    ".kkkk."
+  ]),
+  knightForearm: compileSprite([
     ".ksmk.",
-    "kkllkk",
-    "kkkkkk"
+    "ksmlsk",
+    "ksmggk",
+    ".kkkk."
   ]),
-  // Латная рука / перчатка (5x5)
-  hand: compileSprite([
-    ".ksk.",
-    "ksmlk",
-    ".kkk."
+  knightHand: compileSprite([
+    ".kggk.",
+    "ksmlsk",
+    ".kkkk."
   ]),
-  // Деревянная разрушаемая бочка (12x14)
+  knightThigh: compileSprite([
+    ".kddk.",
+    "kdssdk",
+    "ksmmsk",
+    "kddddk",
+    ".kkkk."
+  ]),
+  knightShin: compileSprite([
+    ".ksmk.",
+    "ksmlsk",
+    "ksmlsk",
+    "ksmggk",
+    ".kkkk."
+  ]),
+  knightFoot: compileSprite([
+    ".ksmkk..",
+    "ksmllsk.",
+    "kkkkkkk."
+  ]),
+
+  // --- СЕГМЕНТЫ ВРАГОВ (ДЛЯ РАСЧЛЕНЁНКИ И СУСТАВОВ) ---
+  skullHead: compileSprite([
+    "..kkkkkkk..",
+    ".kGGGGGGGk.",
+    "kGGGGGGGGGk",
+    "kGGkkGooGGk",
+    "kGGGGGGGGk.",
+    ".kkGkkkGkk.",
+    "..kkkkkkk.."
+  ]),
+  boneRibs: compileSprite([
+    ".kkkGGGGkkk.",
+    "kGGGkGGkGGGk",
+    "kG.kGGGGk.Gk",
+    "...kGkkGk...",
+    "...kGGGGk...",
+    "....kkkk...."
+  ]),
+  wardenHead: compileSprite([
+    ".kk........kk.",
+    "kggk.kkkk.kggk",
+    ".kggkeeeekggk.",
+    "..kkeeeeeekk..",
+    "..keeekRoRek..",
+    "..keeeeeeeek..",
+    "...kkkkkkkk..."
+  ]),
+  wardenChest: compileSprite([
+    ".kkrrrrrrrrkk.",
+    "krreeeeeeeeerk",
+    "kreemmmeeemmer",
+    ".keeeeeeeeeek.",
+    ".keepggggpeek.",
+    "..krrrrrrrrk..",
+    "...kkkkkkkk..."
+  ]),
   barrel: compileSprite([
     "..kkkkkkkk..",
     ".kuUUUUUUuk.",
@@ -78,63 +145,16 @@ window.SPRITES = {
     "kssssssssssk",
     ".kuUUUUUUuk.",
     "..kkkkkkkk.."
-  ]),
-  // Враги
-  stalker: compileSprite([
-    "....kkkkkkk....",
-    "...kGGGGGGGk...",
-    "..kGGGGGGGGGk..",
-    "..kGGkkGooGGk..",
-    "..kGGGGGGGGk...",
-    "...kkGkkkGkk...",
-    "..kkkGGGGkkk...",
-    ".kGGGkGGkGGGk..",
-    ".kG.kGGGGk.Gk..",
-    "....kGGGGk.....",
-    "...kGGkkGGk....",
-    "...kGk..kGk....",
-    "..kGGk..kGGk...",
-    "..kkkk..kkkk..."
-  ]),
-  warden: compileSprite([
-    "..kk..........kk..",
-    ".kggk..kkkk..kggk.",
-    "..kggkkppppkkggk..",
-    "...kkppppppppkk...",
-    "...kpppkRRooRpk...",
-    "..kkrrrrrrrrrrkk..",
-    ".krrppppppppppprk.",
-    "krrpmmmppppmmmprrk",
-    "...kppggggggppk...",
-    "...kpppddddpppk...",
-    "...krrrrrrrrrrk...",
-    "...kpprk..krppk...",
-    "..kppppk..kppppk..",
-    "..kkkkkk..kkkkkk.."
-  ]),
-  wraith: compileSprite([
-    "....kkkkkkk....",
-    "...kbbbbbbbk...",
-    "..kbbbbbbbbbk..",
-    "..kbbkkbccbbk..",
-    "..kbbbccccbbk..",
-    ".kbbbbbbbbbbbk.",
-    ".kbbkbbbbbkbbk.",
-    "kck..kbbbk..kck",
-    "....kbbbbbk....",
-    "...kbbk.kbbk...",
-    "...k.k...k.k..."
   ])
 };
 
-// Бесшовные каменные текстуры стен и платформ
 function createStoneTile(isPlat) {
   const c = document.createElement('canvas');
   c.width = 32; c.height = 32;
   const g = c.getContext('2d');
   g.fillStyle = isPlat ? '#2a2e3d' : '#151720';
   g.fillRect(0, 0, 32, 32);
-  g.fillStyle = '#0a0b10';
+  g.fillStyle = '#090a0f';
   g.fillRect(0, 15, 32, 2);
   g.fillRect(15, 0, 2, 16);
   g.fillRect(7, 16, 2, 16);
