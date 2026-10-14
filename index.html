@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>ASHEN BLADE — v0.2</title>
+<title>ASHEN BLADE — v0.3</title>
 <style>
   * {
     box-sizing: border-box;
@@ -17,7 +17,7 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #090a0f;
+    background: #090a10;
     font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
     touch-action: none;
     color: #e6e1d6;
@@ -26,6 +26,8 @@
     display: block;
     width: 100%;
     height: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
   }
 
   /* ВЕРХНИЙ HUD */
@@ -323,7 +325,7 @@
 
 <script>
 // =====================================================
-// 1. ЗВУКОВОЙ ДВИЖОК (МЕТАЛЛ, ПАРИРОВАНИЕ, УДАРЫ)
+// 1. АУДИО ДВИЖОК И ЭЛЕКТРИЧЕСКИЙ РАЗРЯД МОЛНИИ
 // =====================================================
 class AudioEngine {
   constructor() { this.ctx = null; }
@@ -337,12 +339,12 @@ class AudioEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(step === 3 ? 180 : 280, now);
-    osc.frequency.exponentialRampToValueAtTime(60, now + 0.11);
+    osc.frequency.setValueAtTime(step === 3 ? 170 : 270, now);
+    osc.frequency.exponentialRampToValueAtTime(55, now + 0.12);
     gain.gain.setValueAtTime(0.16, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
     osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(now); osc.stop(now + 0.12);
+    osc.start(now); osc.stop(now + 0.13);
   }
   hit(isCrit = false) {
     this.init();
@@ -350,8 +352,8 @@ class AudioEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = isCrit ? 'square' : 'triangle';
-    osc.frequency.setValueAtTime(isCrit ? 150 : 115, now);
-    osc.frequency.exponentialRampToValueAtTime(35, now + 0.15);
+    osc.frequency.setValueAtTime(isCrit ? 140 : 110, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
     gain.gain.setValueAtTime(isCrit ? 0.3 : 0.22, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
     osc.connect(gain); gain.connect(this.ctx.destination);
@@ -363,13 +365,26 @@ class AudioEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(920, now);
-    osc.frequency.exponentialRampToValueAtTime(1480, now + 0.08);
-    osc.frequency.exponentialRampToValueAtTime(440, now + 0.28);
+    osc.frequency.setValueAtTime(950, now);
+    osc.frequency.exponentialRampToValueAtTime(1550, now + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(450, now + 0.3);
     gain.gain.setValueAtTime(0.32, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
     osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(now); osc.stop(now + 0.3);
+    osc.start(now); osc.stop(now + 0.32);
+  }
+  lightning() {
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.22);
+    gain.gain.setValueAtTime(0.28, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(now); osc.stop(now + 0.24);
   }
   jump() {
     this.init();
@@ -401,7 +416,7 @@ class AudioEngine {
 const sfx = new AudioEngine();
 
 // =====================================================
-// 2. ПУЛ РЕЛИКВИЙ
+// 2. РЕЛИКВИИ РОГАЛИКА
 // =====================================================
 const RELIC_POOL = [
   { id: 'vamp', name: 'Окровавленный клык', desc: '+5 HP за каждого убитого врага.', apply: (p) => { p.vampOnKill += 5; } },
@@ -409,11 +424,11 @@ const RELIC_POOL = [
   { id: 'heavy', name: 'Печать Палача', desc: 'Урон меча +30%, длина клинка +16px.', apply: (p) => { p.dmg = Math.round(p.dmg * 1.3); p.rangeBonus += 16; } },
   { id: 'swift', name: 'Ртутная поступь', desc: 'Скорость бега +20%, откат рывка быстрее на 35%.', apply: (p) => { p.moveSpeed *= 1.2; p.dashCdMax *= 0.65; } },
   { id: 'vital', name: 'Сердце Гаргульи', desc: 'Макс. HP +40 и исцеление на 40 HP.', apply: (p) => { p.maxHp += 40; p.hp = Math.min(p.maxHp, p.hp + 40); } },
-  { id: 'shock', name: 'Грозовой пепел', desc: 'Финальный удар комбо и парирование бьют молнией.', apply: (p) => { p.chainLightning = true; } }
+  { id: 'shock', name: 'Грозовой пепел', desc: 'Финальный удар комбо и парирование бразят цепной молнией.', apply: (p) => { p.chainLightning = true; } }
 ];
 
 // =====================================================
-// 3. ХОЛСТ И МАСШТАБ КАМЕРЫ
+// 3. ХОЛСТ И МАСШТАБ
 // =====================================================
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -524,7 +539,7 @@ window.addEventListener('keyup', (e) => {
 });
 
 // =====================================================
-// 5. ИГРОВОЙ МИР, ИГРОК И ГЕНЕРАЦИЯ ЗАЛОВ
+// 5. ИГРОВЫЕ ПЕРЕМЕННЫЕ И МИР
 // =====================================================
 let hitstopTimer = 0;
 const cam = { x: 0, y: 0, shake: 0 };
@@ -548,6 +563,7 @@ const player = {
   comboStep: 0,
   comboWindow: 0,
   atkTimer: 0,
+  recoveryTimer: 0, // Защита от спам-кликов!
   downSmash: false,
   dashTimer: 0,
   dashCd: 0,
@@ -566,24 +582,13 @@ const FLOOR_Y = 440;
 let platforms = [];
 let enemies = [];
 let particles = [];
-let ashFlakes = [];
-let torches = [];
+let lightningBolts = [];
 let slashArcs = [];
 let floatTexts = [];
 let shrine = null;
 let portal = null;
 let bgPillars = [];
-
-// Падающий атмосферный пепел
-for (let i = 0; i < 45; i++) {
-  ashFlakes.push({
-    x: Math.random() * 2000,
-    y: Math.random() * 500,
-    r: 1 + Math.random() * 2,
-    vx: -15 - Math.random() * 20,
-    vy: 18 + Math.random() * 25
-  });
-}
+let torches = [];
 
 function resetScarf() {
   for (let i = 0; i < player.scarf.length; i++) {
@@ -609,6 +614,20 @@ function spawnParticles(x, y, color, count = 12, speed = 220, gravity = 500) {
   }
 }
 
+function addLightningBolt(x1, y1, x2, y2) {
+  const points = [{x: x1, y: y1}];
+  const steps = 6;
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    points.push({
+      x: x1 + (x2 - x1) * t + (Math.random() - 0.5) * 35,
+      y: y1 + (y2 - y1) * t + (Math.random() - 0.5) * 35
+    });
+  }
+  points.push({x: x2, y: y2});
+  lightningBolts.push({ points, life: 0.22, maxLife: 0.22 });
+}
+
 function addFloatText(x, y, text, color = '#f5efe6', big = false) {
   floatTexts.push({ x, y, text, color, big, vy: -85, life: 0.8 });
 }
@@ -618,24 +637,22 @@ function generateRoom(num) {
   platforms = [];
   enemies = [];
   particles = [];
+  lightningBolts = [];
   slashArcs = [];
   bgPillars = [];
   torches = [];
 
   roomWidth = 1850 + num * 180;
 
-  // Каменный пол и боковые стены
   platforms.push({ x: -160, y: FLOOR_Y, w: roomWidth + 320, h: 240, type: 'floor' });
   platforms.push({ x: -120, y: -400, w: 120, h: 1000, type: 'wall' });
   platforms.push({ x: roomWidth, y: -400, w: 120, h: 1000, type: 'wall' });
 
-  // Готические колонны и горящие факелы
   for (let x = 140; x < roomWidth - 100; x += 240) {
     bgPillars.push({ x, w: 54, h: 500 });
     torches.push({ x: x + 27, y: FLOOR_Y - 135, flicker: Math.random() * 10 });
   }
 
-  // Генерация платформ, башен для Wall-Jump и врагов
   let cursorX = 320;
   while (cursorX < roomWidth - 400) {
     const pat = Math.floor(Math.random() * 3);
@@ -645,7 +662,6 @@ function generateRoom(num) {
       spawnEnemyAt(cursorX + 80, FLOOR_Y - 110, num);
       cursorX += 340;
     } else if (pat === 1) {
-      // Колонна для отскока от стены
       platforms.push({ x: cursorX + 35, y: FLOOR_Y - 230, w: 42, h: 230, type: 'wall' });
       platforms.push({ x: cursorX + 150, y: FLOOR_Y - 195, w: 175, h: 20, type: 'plat' });
       spawnEnemyAt(cursorX + 220, FLOOR_Y - 195, num);
@@ -662,16 +678,13 @@ function generateRoom(num) {
   shrine = { x: Math.floor(roomWidth * 0.48), y: FLOOR_Y, used: false };
   portal = { x: roomWidth - 130, y: FLOOR_Y };
 
-  // Спавн строго НАД полом, чтобы исключить проваливание!
   player.x = 110;
   player.y = FLOOR_Y - player.h - 4;
-  player.vx = 0;
-  player.vy = 0;
+  player.vx = 0; player.vy = 0;
   player.grounded = true;
   player.downSmash = false;
   resetScarf();
 
-  // Мгновенная центровка камеры на старте комнаты
   const scale = H / VIEW_H;
   const viewW = W / scale;
   cam.x = Math.max(-40, player.x - viewW * 0.35);
@@ -699,13 +712,13 @@ function spawnEnemyAt(x, groundY, level) {
     facing: -1,
     state: 'chase',
     timer: 0,
-    atkCooldown: 0.4,
+    atkCooldown: 0.5,
     flashTimer: 0
   });
 }
 
 // =====================================================
-// 6. БОЁВКА, ПАРИРОВАНИЕ И АЛТАРИ
+// 6. БОЁВКА С ТАЙМИНГАМИ (УСТРАНЕН СПАМ-КЛИК)
 // =====================================================
 function performAttack() {
   input.atkBuffered = false;
@@ -714,6 +727,7 @@ function performAttack() {
     player.downSmash = true;
     player.vy = 690;
     player.atkTimer = 0.35;
+    player.recoveryTimer = 0.25;
     sfx.slash(3);
     return;
   }
@@ -726,7 +740,9 @@ function performAttack() {
 
   const isFinisher = player.comboStep === 3;
   player.atkTimer = isFinisher ? 0.24 : 0.16;
-  player.comboWindow = 0.55;
+  // ЖЁСТКАЯ ЗАДЕРЖКА (RECOVERY): нельзя спамить удары без остановки!
+  player.recoveryTimer = isFinisher ? 0.38 : 0.22;
+  player.comboWindow = 0.58;
   player.vx = player.facing * (isFinisher ? 310 : 175);
   sfx.slash(player.comboStep);
 
@@ -752,12 +768,15 @@ function performAttack() {
       hitAny = true;
       const stunnedBonus = e.state === 'stunned' ? 1.8 : 1.0;
       const isCrit = isFinisher || e.state === 'stunned' || Math.random() < player.critChance;
-      const dmg = Math.round(player.dmg * (isFinisher ? 1.45 : 1.0) * (isCrit ? 1.7 : 1.0) * stunnedBonus);
+      const dmg = Math.round(player.dmg * (isFinisher ? 1.45 : 1.0) * (isCrit ? 1.75 : 1.0) * stunnedBonus);
       damageEnemy(e, dmg, player.facing * (isFinisher ? 320 : 190), isCrit);
 
+      // Видимая цепная молния
       if (isFinisher && player.chainLightning) {
+        sfx.lightning();
         enemies.forEach(other => {
-          if (other !== e && Math.hypot(other.x - e.x, other.y - e.y) < 220) {
+          if (other !== e && Math.hypot(other.x - e.x, other.y - e.y) < 230) {
+            addLightningBolt(e.x + e.w/2, e.y + e.h/2, other.x + other.w/2, other.y + other.h/2);
             damageEnemy(other, Math.round(dmg * 0.6), player.facing * 150, false, '#6ab0e8');
           }
         });
@@ -766,7 +785,7 @@ function performAttack() {
   });
 
   if (hitAny) {
-    hitstopTimer = isFinisher ? 0.06 : 0.032;
+    hitstopTimer = isFinisher ? 0.065 : 0.035;
     cam.shake = isFinisher ? 8.5 : 4;
     if (navigator.vibrate) navigator.vibrate(isFinisher ? 35 : 15);
   }
@@ -827,7 +846,7 @@ function openRelicModal() {
 }
 
 // =====================================================
-// 7. ИСПРАВЛЕННАЯ ФИЗИКА И КОЛЛИЗИИ (БЕЗ ПРОВАЛА СКВОЗЬ ПОЛ)
+// 7. ФИЗИКА С УЧЁТОМ СТЕН ДЛЯ ИИ
 // =====================================================
 const GRAVITY = 1520;
 
@@ -842,6 +861,7 @@ function update(dt) {
   if (input.jumpBuffer > 0) input.jumpBuffer -= dt;
   if (player.coyoteTimer > 0) player.coyoteTimer -= dt;
   if (player.atkTimer > 0) player.atkTimer -= dt;
+  if (player.recoveryTimer > 0) player.recoveryTimer -= dt; // таймер задержки удара
   if (player.comboWindow > 0) player.comboWindow -= dt;
   if (player.dashTimer > 0) player.dashTimer -= dt;
   if (player.dashCd > 0) player.dashCd -= dt;
@@ -849,7 +869,7 @@ function update(dt) {
   if (player.parryCd > 0) player.parryCd -= dt;
   if (player.invuln > 0) player.invuln -= dt;
 
-  // 1. Парирование щитом (Parry)
+  // Парирование
   if (input.parryBuffered && player.parryCd <= 0 && player.dashTimer <= 0) {
     input.parryBuffered = false;
     player.parryWindow = 0.28;
@@ -859,7 +879,7 @@ function update(dt) {
   }
   input.parryBuffered = false;
 
-  // 2. Рывок (Dash с неуязвимостью)
+  // Рывок
   if (input.dashBuffered && player.dashCd <= 0 && player.dashTimer <= 0) {
     input.dashBuffered = false;
     player.dashTimer = 0.18;
@@ -874,13 +894,13 @@ function update(dt) {
   }
   input.dashBuffered = false;
 
-  // 3. Атака мечом
-  if (input.atkBuffered && player.atkTimer <= 0 && player.dashTimer <= 0) {
+  // Атака (теперь проверяет recoveryTimer!)
+  if (input.atkBuffered && player.atkTimer <= 0 && player.recoveryTimer <= 0 && player.dashTimer <= 0) {
     performAttack();
   }
 
-  // 4. Горизонтальная скорость
-  if (player.dashTimer <= 0 && player.atkTimer <= 0 && player.parryWindow <= 0) {
+  // Движение
+  if (player.dashTimer <= 0 && player.atkTimer <= 0 && player.recoveryTimer <= 0 && player.parryWindow <= 0) {
     if (input.x !== 0) {
       player.facing = Math.sign(input.x);
       const targetVx = input.x * player.moveSpeed;
@@ -888,11 +908,11 @@ function update(dt) {
     } else {
       player.vx *= Math.pow(0.001, dt);
     }
-  } else if (player.atkTimer > 0 && !player.downSmash) {
-    player.vx *= Math.pow(0.02, dt);
+  } else {
+    player.vx *= Math.pow(0.05, dt);
   }
 
-  // 5. Гравитация и Wall-Slide
+  // Гравитация
   if (player.dashTimer <= 0) {
     let g = GRAVITY;
     if (player.vy < 0 && !input.jumpHeld) g *= 2.3;
@@ -904,7 +924,7 @@ function update(dt) {
     }
   }
 
-  // 6. Прыжок и Wall-Jump
+  // Прыжок
   if (input.jumpBuffer > 0) {
     if (player.coyoteTimer > 0) {
       player.vy = -560;
@@ -924,12 +944,11 @@ function update(dt) {
     }
   }
 
-  // 7. ГОРИЗОНТАЛЬНОЕ ДВИЖЕНИЕ (проверяем только реальные стены выше стоп!)
+  // Коллизии игрока со стенами
   player.x += player.vx * dt;
   player.wallDir = 0;
   for (const p of platforms) {
     if (p.type === 'wall') {
-      // Игнорируем нижние и верхние кромки в 4px, чтобы не цеплять пол как стену
       if (rectOverlap(player.x, player.y + 4, player.w, player.h - 8, p.x, p.y, p.w, p.h)) {
         if (player.vx > 0 || (player.x + player.w / 2 < p.x + p.w / 2)) {
           player.x = p.x - player.w;
@@ -943,7 +962,6 @@ function update(dt) {
     }
   }
 
-  // 8. ВЕРТИКАЛЬНОЕ ДВИЖЕНИЕ (Swept Landing — невозможно пробить пол!)
   const prevBottom = player.y + player.h;
   player.y += player.vy * dt;
   player.grounded = false;
@@ -963,14 +981,12 @@ function update(dt) {
           player.y = p.y + p.h;
           player.vy = 0;
         } else if (p.type === 'floor') {
-          // Жёсткая защита: если каким-то образом оказались внутри основного пола, выталкиваем наверх
           landOn(p.y);
         }
       }
     }
   }
 
-  // Аварийный возврат, если улетел ниже арены
   if (player.y > FLOOR_Y + 80) {
     player.y = FLOOR_Y - player.h - 2;
     player.vy = 0;
@@ -996,13 +1012,11 @@ function update(dt) {
     player.coyoteTimer = 0.12;
   }
 
-  // Физика плаща с ограничением максимальной длины сегмента
   let leadX = player.x + player.w / 2 - player.facing * 5;
   let leadY = player.y + 11;
   player.scarf.forEach((node, idx) => {
     node.x += (leadX - node.x - player.facing * 5) * Math.min(1, dt * (24 - idx * 2));
     node.y += (leadY - node.y + Math.sin(performance.now() * 0.015 + idx) * 1.8) * Math.min(1, dt * 20);
-    // Защита от растягивания на весь экран
     const dist = Math.hypot(node.x - leadX, node.y - leadY);
     if (dist > 16) {
       const ang = Math.atan2(node.y - leadY, node.x - leadX);
@@ -1012,7 +1026,7 @@ function update(dt) {
     leadX = node.x; leadY = node.y;
   });
 
-  // 9. ИИ Врагов и проверка ПАРИРОВАНИЯ
+  // 8. ИИ Врагов С УЧЁТОМ СТЕН (не проходят насквозь колонн!)
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
     if (e.hp <= 0) {
@@ -1039,16 +1053,20 @@ function update(dt) {
         e.vx = e.facing * (e.type === 'warden' ? 340 : 420);
 
         if (Math.abs(dx) < (e.type === 'warden' ? 76 : 60) && Math.abs(dy) < 52) {
-          // ПРОВЕРКА УСПЕШНОГО ПАРИРОВАНИЯ ЩИТОМ!
           if (player.parryWindow > 0) {
             sfx.parryClang();
             hitstopTimer = 0.09;
             cam.shake = 12;
             e.state = 'stunned';
-            e.timer = 2.0; // Оглушение на 2 секунды
+            e.timer = 2.0;
             e.vx = -e.facing * 260;
             spawnParticles(player.x + player.w / 2 + player.facing * 14, player.y + 20, '#6ab0e8', 22, 320);
             addFloatText(e.x + e.w / 2, e.y - 16, 'ПАРИРОВАНИЕ!', '#6ab0e8', true);
+            if (player.chainLightning) {
+              sfx.lightning();
+              addLightningBolt(player.x, player.y, e.x + e.w/2, e.y + e.h/2);
+              damageEnemy(e, Math.round(player.dmg * 1.5), -e.facing * 200, true, '#6ab0e8');
+            }
             if (navigator.vibrate) navigator.vibrate([30, 20, 50]);
           } else {
             hurtPlayer(e.dmg, e.facing * 260);
@@ -1062,9 +1080,9 @@ function update(dt) {
         e.atkCooldown = e.type === 'warden' ? 1.2 : 0.8;
       }
     } else {
-      if (dist < 420) {
+      if (dist < 450) {
         e.facing = dx >= 0 ? 1 : -1;
-        const spd = e.type === 'warden' ? 110 : (e.type === 'wraith' ? 200 : 160);
+        const spd = e.type === 'warden' ? 105 : (e.type === 'wraith' ? 190 : 150);
         if (Math.abs(dx) > 44) {
           e.vx += (e.facing * spd - e.vx) * dt * 8;
         } else if (e.atkCooldown <= 0 && Math.abs(dy) < 55) {
@@ -1079,7 +1097,17 @@ function update(dt) {
     if (e.type !== 'wraith') {
       const prevEBottom = e.y + e.h;
       e.vy = Math.min(800, e.vy + GRAVITY * dt);
+
+      // Проверка столкновений врагов со стенами (блокируем проход сквозь колонны!)
       e.x += e.vx * dt;
+      for (const p of platforms) {
+        if (p.type === 'wall' && rectOverlap(e.x, e.y + 4, e.w, e.h - 8, p.x, p.y, p.w, p.h)) {
+          if (e.vx > 0) e.x = p.x - e.w;
+          else if (e.vx < 0) e.x = p.x + p.w;
+          e.vx = 0;
+        }
+      }
+
       e.y += e.vy * dt;
       for (const p of platforms) {
         if (e.vy >= 0 && prevEBottom <= p.y + 18 &&
@@ -1100,7 +1128,7 @@ function update(dt) {
     }
   }
 
-  // 10. Взаимодействие с Алтарём и Вратами
+  // 9. Взаимодействие
   const useBtn = document.getElementById('btn-use');
   const nearShrine = shrine && !shrine.used && Math.hypot(player.x - shrine.x, (player.y + player.h) - shrine.y) < 75;
   const nearPortal = portal && enemies.length === 0 && Math.hypot(player.x - portal.x, (player.y + player.h) - portal.y) < 85;
@@ -1118,7 +1146,7 @@ function update(dt) {
     input.usePressed = false;
   }
 
-  // 11. Частицы и пепел
+  // 10. Очистка частиц и молний
   for (let i = particles.length - 1; i >= 0; i--) {
     const pt = particles[i];
     pt.vy += pt.gravity * dt;
@@ -1126,6 +1154,10 @@ function update(dt) {
     pt.y += pt.vy * dt;
     pt.life -= dt;
     if (pt.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = lightningBolts.length - 1; i >= 0; i--) {
+    lightningBolts[i].life -= dt;
+    if (lightningBolts[i].life <= 0) lightningBolts.splice(i, 1);
   }
   for (let i = slashArcs.length - 1; i >= 0; i--) {
     slashArcs[i].life -= dt;
@@ -1138,7 +1170,6 @@ function update(dt) {
     if (ft.life <= 0) floatTexts.splice(i, 1);
   }
 
-  // 12. Плавная камера с жёстким ограничением по полу
   const scale = H / VIEW_H;
   const viewW = W / scale;
   const targetCamX = Math.max(-60, Math.min(roomWidth - viewW + 60, player.x + player.w / 2 + player.facing * 55 - viewW / 2));
@@ -1181,14 +1212,14 @@ function updateHUD() {
   document.getElementById('atk-txt').textContent = `УРОН: ${player.dmg}`;
   document.getElementById('souls-txt').textContent = `ПЕПЕЛ: ${player.souls}`;
   document.getElementById('room-name').textContent = `ЗАЛ ${roomIndex} — ЦИТАДЕЛЬ ПЕПЛА`;
-  document.getElementById('room-status').textContent = enemies.length > 0
+  document.getElementById('room-status').textContent = enemies.length >0
     ? `Врагов в зале: ${enemies.length}`
     : `Зал очищен — Врата открыты!`;
   document.getElementById('relics-list').innerHTML = player.relics.map(r => `<span class="relic-tag">${r}</span>`).join('');
 }
 
 // =====================================================
-// 8. ГОТИЧЕСКИЙ РЕНДЕР (АРКИ, ФАКЕЛЫ, РЫЦАРЬ, МОНСТРЫ)
+// 8. РЕНДЕР С УНИКАЛЬНЫМИ СПРАЙТАМИ И МОЛНИЯМИ
 // =====================================================
 function render() {
   const grad = ctx.createLinearGradient(0, 0, 0, H);
@@ -1207,7 +1238,6 @@ function render() {
 
   const now = performance.now();
 
-  // 1. Готические колонны и своды на фоне
   bgPillars.forEach(b => {
     const px = b.x - cam.x * 0.15;
     ctx.fillStyle = '#11131c';
@@ -1219,7 +1249,6 @@ function render() {
     ctx.strokeRect(px, -40, b.w, b.h);
   });
 
-  // 2. Горящие факелы с мягким свечением
   torches.forEach(t => {
     const rad = 58 + Math.sin(now * 0.012 + t.flicker) * 7;
     const tGrad = ctx.createRadialGradient(t.x, t.y, 4, t.x, t.y, rad);
@@ -1238,7 +1267,6 @@ function render() {
     ctx.fill();
   });
 
-  // 3. Алтарь Предков
   if (shrine) {
     ctx.fillStyle = shrine.used ? '#2b2d38' : '#c4a46c';
     ctx.beginPath();
@@ -1255,7 +1283,6 @@ function render() {
     }
   }
 
-  // 4. Врата перехода
   if (portal) {
     const active = enemies.length === 0;
     ctx.strokeStyle = active ? '#68e09c' : '#3a3d4a';
@@ -1267,21 +1294,17 @@ function render() {
     }
   }
 
-  // 5. Каменные платформы и плиты пола
   platforms.forEach(p => {
     ctx.fillStyle = p.type === 'plat' ? '#282c3a' : '#171922';
     ctx.fillRect(p.x, p.y, p.w, p.h);
-
-    // Верхняя каменная кромка
     ctx.fillStyle = p.type === 'plat' ? '#4a5268' : '#2d3242';
     ctx.fillRect(p.x, p.y, p.w, 6);
-
     ctx.strokeStyle = p.type === 'plat' ? '#646e8a' : '#353a4d';
     ctx.lineWidth = 2;
     ctx.strokeRect(p.x, p.y, p.w, p.h);
   });
 
-  // 6. Отрисовка врагов (Силуэты, броня, оружие, статус оглушения)
+  // Отрисовка врагов
   enemies.forEach(e => {
     ctx.save();
     if (e.state === 'windup') {
@@ -1298,22 +1321,16 @@ function render() {
       ctx.fillText('ОГЛУШЁН', e.x + e.w / 2, e.y - 16);
     }
 
-    // Тело монстра
-    ctx.fillStyle = e.flashTimer > 0
-      ? '#ffffff'
-      : (e.type === 'warden' ? '#5e1d27' : (e.type === 'wraith' ? '#36566e' : '#3d3347'));
+    ctx.fillStyle = e.flashTimer > 0 ? '#ffffff' : (e.type === 'warden' ? '#5e1d27' : (e.type === 'wraith' ? '#36566e' : '#3d3347'));
     ctx.fillRect(e.x, e.y + 8, e.w, e.h - 8);
 
-    // Голова / рогатый шлем
     ctx.fillStyle = e.flashTimer > 0 ? '#ffffff' : '#26222e';
     ctx.fillRect(e.x + 4, e.y, e.w - 8, 14);
 
-    // Светящийся глаз
     ctx.fillStyle = e.state === 'windup' ? '#ffbe42' : (e.state === 'stunned' ? '#6ab0e8' : '#ff2a44');
     const eyeX = e.facing === 1 ? e.x + e.w - 9 : e.x + 4;
     ctx.fillRect(eyeX, e.y + 5, 5, 4);
 
-    // Полоска здоровья
     if (e.hp < e.maxHp) {
       ctx.fillStyle = '#181214';
       ctx.fillRect(e.x - 4, e.y - 9, e.w + 8, 4);
@@ -1323,7 +1340,7 @@ function render() {
     ctx.restore();
   });
 
-  // 7. Отрисовка Пепельного Стража (Плащ, доспех, шлем, клинок, щит)
+  // Шарф и Пепельный Страж
   ctx.strokeStyle = '#a82030';
   ctx.lineWidth = 6;
   ctx.lineCap = 'round';
@@ -1340,25 +1357,20 @@ function render() {
 
   const bob = player.grounded && Math.abs(player.vx) > 20 ? Math.sin(player.animTime * 18) * 2.5 : 0;
 
-  // Ноги
   ctx.fillStyle = '#252834';
   ctx.fillRect(player.x + 4, player.y + 30, 7, 16);
   ctx.fillRect(player.x + 15, player.y + 30, 7, 16);
 
-  // Кираса и наплечники
   ctx.fillStyle = player.dashTimer > 0 ? '#f0dbb0' : '#7b8296';
   ctx.fillRect(player.x + 2, player.y + 13 + bob, player.w - 4, 20);
 
-  // Рыцарский шлем
   ctx.fillStyle = '#9aa2b8';
   ctx.fillRect(player.x + 4, player.y + bob, player.w - 8, 14);
 
-  // Горящий визор
   ctx.fillStyle = '#00f3ff';
   const visorX = player.facing === 1 ? player.x + player.w - 10 : player.x + 4;
   ctx.fillRect(visorX, player.y + 5 + bob, 6, 3);
 
-  // Клинок в руке
   ctx.strokeStyle = '#dce3f2';
   ctx.lineWidth = 3.5;
   ctx.beginPath();
@@ -1368,7 +1380,6 @@ function render() {
   ctx.lineTo(handX + player.facing * 22, handY - 12);
   ctx.stroke();
 
-  // Энергетический щит при парировании
   if (player.parryWindow > 0) {
     ctx.strokeStyle = '#6ab0e8';
     ctx.lineWidth = 4;
@@ -1378,7 +1389,7 @@ function render() {
   }
   ctx.restore();
 
-  // 8. Дуги рассечения мечом
+  // Дуги меча
   slashArcs.forEach(s => {
     ctx.save();
     ctx.translate(s.x, s.y);
@@ -1396,7 +1407,22 @@ function render() {
     ctx.restore();
   });
 
-  // 9. Частицы и цифры урона
+  // Электрические молнии реликвии
+  lightningBolts.forEach(bolt => {
+    ctx.save();
+    ctx.strokeStyle = '#6ab0e8';
+    ctx.lineWidth = 3.5;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#00f3ff';
+    ctx.beginPath();
+    bolt.points.forEach((pt, i) => {
+      if (i === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    });
+    ctx.stroke();
+    ctx.restore();
+  });
+
   particles.forEach(pt => {
     ctx.fillStyle = pt.color;
     ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
