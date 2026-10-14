@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>ASHEN BLADE — Roguelite Slasher v0.1</title>
+<title>ASHEN BLADE — v0.2</title>
 <style>
   * {
     box-sizing: border-box;
@@ -17,7 +17,7 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #0b0c10;
+    background: #090a0f;
     font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
     touch-action: none;
     color: #e6e1d6;
@@ -36,7 +36,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: max(12px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+    padding: max(10px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
   }
   .top-row {
     display: flex;
@@ -46,17 +46,18 @@
   .player-stats {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    background: rgba(14, 15, 20, 0.78);
-    border: 1px solid rgba(196, 164, 108, 0.35);
+    gap: 5px;
+    background: rgba(12, 13, 18, 0.84);
+    border: 1px solid rgba(196, 164, 108, 0.4);
     padding: 8px 12px;
     border-radius: 8px;
-    min-width: 210px;
+    min-width: 220px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
   }
   .hp-bar-wrap {
     width: 100%;
     height: 11px;
-    background: #23191d;
+    background: #1f1417;
     border: 1px solid #5a383e;
     border-radius: 3px;
     overflow: hidden;
@@ -65,27 +66,27 @@
   #hp-Lag {
     position: absolute;
     top: 0; left: 0; bottom: 0;
-    background: #d99b26;
+    background: #e09f24;
     width: 100%;
-    transition: width 0.45s ease-out;
+    transition: width 0.4s ease-out;
   }
   #hp-Fill {
     position: absolute;
     top: 0; left: 0; bottom: 0;
-    background: linear-gradient(90deg, #8f1d2c, #d93848);
+    background: linear-gradient(90deg, #8f1d2c, #e0384b);
     width: 100%;
   }
   .meta-row {
     display: flex;
     justify-content: space-between;
     font-size: 11px;
-    letter-spacing: 0.8px;
+    letter-spacing: 0.7px;
     color: #c4a46c;
     font-weight: 700;
   }
   .relics-bar {
     display: flex;
-    gap: 6px;
+    gap: 5px;
     flex-wrap: wrap;
     margin-top: 2px;
   }
@@ -93,13 +94,13 @@
     font-size: 10px;
     padding: 2px 6px;
     border-radius: 4px;
-    background: rgba(196, 164, 108, 0.15);
-    border: 1px solid rgba(196, 164, 108, 0.4);
+    background: rgba(196, 164, 108, 0.16);
+    border: 1px solid rgba(196, 164, 108, 0.45);
     color: #f0dbb0;
   }
 
   .room-badge {
-    background: rgba(14, 15, 20, 0.78);
+    background: rgba(12, 13, 18, 0.84);
     border: 1px solid rgba(255, 255, 255, 0.15);
     padding: 8px 14px;
     border-radius: 8px;
@@ -108,17 +109,17 @@
   .room-title {
     font-size: 13px;
     font-weight: 800;
-    letter-spacing: 1.5px;
+    letter-spacing: 1.4px;
     color: #c4a46c;
     text-transform: uppercase;
   }
   .room-sub {
     font-size: 11px;
-    color: #9296a0;
+    color: #9ba0ab;
     margin-top: 2px;
   }
 
-  /* ТАЧ-КОНТРОЛЛЕР (ЛЕВЫЙ СТИК + ПРАВЫЙ БЛОК СЛЭШЕРА) */
+  /* ТАЧ-КОНТРОЛЛЕР */
   .controls-row {
     display: flex;
     justify-content: space-between;
@@ -126,19 +127,19 @@
     width: 100%;
   }
   #stick-zone {
-    width: 150px;
-    height: 150px;
+    width: 155px;
+    height: 155px;
     position: relative;
     pointer-events: auto;
   }
   .stick-base {
     position: absolute;
     left: 50%; top: 50%;
-    width: 116px; height: 116px;
+    width: 118px; height: 118px;
     transform: translate(-50%, -50%);
     border-radius: 50%;
-    border: 2px solid rgba(196, 164, 108, 0.35);
-    background: radial-gradient(circle, rgba(196, 164, 108, 0.08) 0%, rgba(10, 10, 14, 0.45) 100%);
+    border: 2px solid rgba(196, 164, 108, 0.38);
+    background: radial-gradient(circle, rgba(196, 164, 108, 0.1) 0%, rgba(10, 10, 14, 0.5) 100%);
   }
   #stick-knob {
     position: absolute;
@@ -146,14 +147,14 @@
     width: 48px; height: 48px;
     transform: translate(-50%, -50%);
     border-radius: 50%;
-    background: radial-gradient(circle, #e8d0a5 0%, #9c7a44 100%);
-    box-shadow: 0 0 14px rgba(196, 164, 108, 0.5);
+    background: radial-gradient(circle, #ebd4aa 0%, #9c7a44 100%);
+    box-shadow: 0 0 14px rgba(196, 164, 108, 0.55);
   }
 
   .action-buttons {
     position: relative;
-    width: 210px;
-    height: 155px;
+    width: 230px;
+    height: 165px;
     pointer-events: auto;
   }
   .act-btn {
@@ -164,58 +165,60 @@
     align-items: center;
     justify-content: center;
     font-weight: 900;
-    letter-spacing: 0.8px;
+    letter-spacing: 0.7px;
     color: #f5efe6;
     border: 2px solid rgba(255, 255, 255, 0.28);
-    backdrop-filter: blur(4px);
-    transition: transform 0.06s;
+    transition: transform 0.05s;
   }
   .act-btn:active, .act-btn.pressed {
     transform: scale(0.88);
     filter: brightness(1.3);
   }
-  /* Кнопка УДАРА — главная и крупная */
   #btn-atk {
     width: 82px; height: 82px;
-    right: 68px; bottom: 8px;
-    background: radial-gradient(circle, rgba(196, 52, 68, 0.72), rgba(80, 18, 28, 0.85));
+    right: 68px; bottom: 6px;
+    background: radial-gradient(circle, rgba(196, 52, 68, 0.78), rgba(80, 18, 28, 0.9));
     border-color: #e05364;
-    box-shadow: 0 0 20px rgba(224, 83, 100, 0.4);
+    box-shadow: 0 0 20px rgba(224, 83, 100, 0.45);
     font-size: 13px;
   }
-  /* Кнопка ПРЫЖКА */
   #btn-jmp {
     width: 72px; height: 72px;
     right: 0px; bottom: 58px;
-    background: radial-gradient(circle, rgba(72, 130, 180, 0.65), rgba(24, 48, 72, 0.85));
+    background: radial-gradient(circle, rgba(72, 130, 180, 0.72), rgba(24, 48, 72, 0.9));
     border-color: #6ab0e8;
-    font-size: 12px;
+    font-size: 11px;
   }
-  /* Кнопка ПЕРЕКАТА / РЫВКА */
   #btn-dash {
     width: 64px; height: 64px;
-    right: 138px; bottom: 58px;
-    background: radial-gradient(circle, rgba(196, 164, 108, 0.65), rgba(64, 50, 28, 0.85));
+    right: 148px; bottom: 48px;
+    background: radial-gradient(circle, rgba(196, 164, 108, 0.72), rgba(64, 50, 28, 0.9));
     border-color: #d8b878;
     font-size: 11px;
   }
-  /* Кнопка ВЗАИМОДЕЙСТВИЯ (Алтари / Врата) */
+  #btn-parry {
+    width: 60px; height: 60px;
+    right: 82px; bottom: 96px;
+    background: radial-gradient(circle, rgba(120, 140, 180, 0.75), rgba(35, 42, 60, 0.9));
+    border-color: #9ab4e8;
+    font-size: 10px;
+  }
   #btn-use {
-    width: 58px; height: 58px;
-    right: 78px; bottom: 98px;
-    background: radial-gradient(circle, rgba(90, 185, 130, 0.75), rgba(25, 65, 42, 0.9));
+    width: 64px; height: 64px;
+    right: 12px; bottom: 130px;
+    background: radial-gradient(circle, rgba(90, 185, 130, 0.85), rgba(25, 65, 42, 0.95));
     border-color: #68e09c;
     font-size: 11px;
     display: none;
-    box-shadow: 0 0 16px rgba(104, 224, 156, 0.5);
+    box-shadow: 0 0 18px rgba(104, 224, 156, 0.6);
   }
 
-  /* МОДАЛКА ВЫБОРА РЕЛИКВИИ (РОГАЛИК) */
+  /* МОДАЛКА ВЫБОРА РЕЛИКВИИ */
   #relic-modal {
     position: absolute;
     inset: 0;
     z-index: 20;
-    background: rgba(8, 9, 12, 0.88);
+    background: rgba(8, 9, 12, 0.9);
     backdrop-filter: blur(8px);
     display: none;
     flex-direction: column;
@@ -251,7 +254,6 @@
     padding: 14px;
     cursor: pointer;
     pointer-events: auto;
-    transition: transform 0.12s, box-shadow 0.12s;
     text-align: left;
   }
   .relic-card:active {
@@ -285,15 +287,15 @@
         <div id="hp-Fill"></div>
       </div>
       <div class="meta-row">
-        <span id="atk-txt">УРОН: 22</span>
+        <span id="atk-txt">УРОН: 24</span>
         <span id="souls-txt">ПЕПЕЛ: 0</span>
       </div>
       <div class="relics-bar" id="relics-list"></div>
     </div>
 
     <div class="room-badge">
-      <div class="room-title" id="room-name">ЗАЛ I — ЦИТАДЕЛЬ ПЕПЛА</div>
-      <div class="room-sub" id="room-status">Врагов осталось: 0</div>
+      <div class="room-title" id="room-name">ЗАЛ 1 — ЦИТАДЕЛЬ ПЕПЛА</div>
+      <div class="room-sub" id="room-status">Врагов в зале: 0</div>
     </div>
   </div>
 
@@ -305,6 +307,7 @@
 
     <div class="action-buttons">
       <div class="act-btn" id="btn-use">ВЗЯТЬ</div>
+      <div class="act-btn" id="btn-parry">ЩИТ</div>
       <div class="act-btn" id="btn-dash">РЫВОК</div>
       <div class="act-btn" id="btn-jmp">ПРЫЖОК</div>
       <div class="act-btn" id="btn-atk">УДАР</div>
@@ -312,16 +315,15 @@
   </div>
 </div>
 
-<!-- ВЫБОР РЕЛИКВИИ -->
 <div id="relic-modal">
   <div class="modal-title">АЛТАРЬ ПРЕДКОВ</div>
-  <div class="modal-sub">Выбери один дар, который изменит твой клинок в этом забеге</div>
+  <div class="modal-sub">Выбери один дар для своего клинка</div>
   <div class="cards-row" id="cards-container"></div>
 </div>
 
 <script>
 // =====================================================
-// 1. СИНТЕЗАТОР ЗВУКА (МРАЧНЫЙ СЛЭШЕР: МЕТАЛЛ, УДАРЫ, РЫВКИ)
+// 1. ЗВУКОВОЙ ДВИЖОК (МЕТАЛЛ, ПАРИРОВАНИЕ, УДАРЫ)
 // =====================================================
 class AudioEngine {
   constructor() { this.ctx = null; }
@@ -329,16 +331,15 @@ class AudioEngine {
     if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (this.ctx.state === 'suspended') this.ctx.resume();
   }
-  slash(comboStep = 1) {
+  slash(step = 1) {
     this.init();
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sawtooth';
-    const baseFreq = comboStep === 3 ? 190 : (comboStep === 2 ? 320 : 260);
-    osc.frequency.setValueAtTime(baseFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(65, now + 0.11);
-    gain.gain.setValueAtTime(0.18, now);
+    osc.frequency.setValueAtTime(step === 3 ? 180 : 280, now);
+    osc.frequency.exponentialRampToValueAtTime(60, now + 0.11);
+    gain.gain.setValueAtTime(0.16, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
     osc.connect(gain); gain.connect(this.ctx.destination);
     osc.start(now); osc.stop(now + 0.12);
@@ -349,12 +350,26 @@ class AudioEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = isCrit ? 'square' : 'triangle';
-    osc.frequency.setValueAtTime(isCrit ? 160 : 120, now);
-    osc.frequency.exponentialRampToValueAtTime(38, now + 0.16);
-    gain.gain.setValueAtTime(isCrit ? 0.32 : 0.24, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+    osc.frequency.setValueAtTime(isCrit ? 150 : 115, now);
+    osc.frequency.exponentialRampToValueAtTime(35, now + 0.15);
+    gain.gain.setValueAtTime(isCrit ? 0.3 : 0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
     osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(now); osc.stop(now + 0.17);
+    osc.start(now); osc.stop(now + 0.16);
+  }
+  parryClang() {
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(920, now);
+    osc.frequency.exponentialRampToValueAtTime(1480, now + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(440, now + 0.28);
+    gain.gain.setValueAtTime(0.32, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(now); osc.stop(now + 0.3);
   }
   jump() {
     this.init();
@@ -362,9 +377,9 @@ class AudioEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(150, now);
-    osc.frequency.exponentialRampToValueAtTime(360, now + 0.09);
-    gain.gain.setValueAtTime(0.12, now);
+    osc.frequency.setValueAtTime(160, now);
+    osc.frequency.exponentialRampToValueAtTime(340, now + 0.09);
+    gain.gain.setValueAtTime(0.11, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
     osc.connect(gain); gain.connect(this.ctx.destination);
     osc.start(now); osc.stop(now + 0.1);
@@ -376,29 +391,29 @@ class AudioEngine {
     const gain = this.ctx.createGain();
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(240, now);
-    osc.frequency.exponentialRampToValueAtTime(80, now + 0.14);
-    gain.gain.setValueAtTime(0.16, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(75, now + 0.13);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
     osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(now); osc.stop(now + 0.15);
+    osc.start(now); osc.stop(now + 0.14);
   }
 }
 const sfx = new AudioEngine();
 
 // =====================================================
-// 2. БАЗА РЕЛИКВИЙ РОГАЛИКА
+// 2. ПУЛ РЕЛИКВИЙ
 // =====================================================
 const RELIC_POOL = [
-  { id: 'vamp', name: 'Окровавленный клык', desc: '+4 HP при каждом убийстве врага клинком.', apply: (p) => { p.vampOnKill += 4; } },
+  { id: 'vamp', name: 'Окровавленный клык', desc: '+5 HP за каждого убитого врага.', apply: (p) => { p.vampOnKill += 5; } },
   { id: 'crit', name: 'Обсидиановая грань', desc: '+25% к шансу критического удара (x1.8 урона).', apply: (p) => { p.critChance += 0.25; } },
-  { id: 'heavy', name: 'Печать Палача', desc: 'Урон меча +30%, радиус взмаха +15%.', apply: (p) => { p.dmg = Math.round(p.dmg * 1.3); p.rangeBonus += 14; } },
+  { id: 'heavy', name: 'Печать Палача', desc: 'Урон меча +30%, длина клинка +16px.', apply: (p) => { p.dmg = Math.round(p.dmg * 1.3); p.rangeBonus += 16; } },
   { id: 'swift', name: 'Ртутная поступь', desc: 'Скорость бега +20%, откат рывка быстрее на 35%.', apply: (p) => { p.moveSpeed *= 1.2; p.dashCdMax *= 0.65; } },
-  { id: 'vital', name: 'Сердце Гаргульи', desc: 'Макс. HP +40 и мгновенное исцеление на 40 HP.', apply: (p) => { p.maxHp += 40; p.hp = Math.min(p.maxHp, p.hp + 40); } },
-  { id: 'shock', name: 'Грозовой пепел', desc: 'Третий удар комбо бьёт молнией по соседним врагам.', apply: (p) => { p.chainLightning = true; } }
+  { id: 'vital', name: 'Сердце Гаргульи', desc: 'Макс. HP +40 и исцеление на 40 HP.', apply: (p) => { p.maxHp += 40; p.hp = Math.min(p.maxHp, p.hp + 40); } },
+  { id: 'shock', name: 'Грозовой пепел', desc: 'Финальный удар комбо и парирование бьют молнией.', apply: (p) => { p.chainLightning = true; } }
 ];
 
 // =====================================================
-// 3. НАСТРОЙКА ХОЛСТА И КАМЕРЫ
+// 3. ХОЛСТ И МАСШТАБ КАМЕРЫ
 // =====================================================
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -410,11 +425,10 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// Виртуальный масштаб (чтобы на любом экране смартфона обзор был одинаковым)
-const VIEW_H = 520;
+const VIEW_H = 500;
 
 // =====================================================
-// 4. ВВОД: ТАЧСКРИН + КЛАВИАТУРА
+// 4. УПРАВЛЕНИЕ
 // =====================================================
 const input = {
   x: 0, y: 0,
@@ -422,10 +436,10 @@ const input = {
   jumpBuffer: 0,
   atkBuffered: false,
   dashBuffered: false,
+  parryBuffered: false,
   usePressed: false
 };
 
-// Левый стик
 const stickZone = document.getElementById('stick-zone');
 const stickKnob = document.getElementById('stick-knob');
 let stickTouchId = null;
@@ -463,11 +477,10 @@ function updateStick(e) {
 
   const nx = kx / maxR;
   const ny = ky / maxR;
-  input.x = Math.abs(nx) > 0.18 ? Math.sign(nx) * Math.min(1, (Math.abs(nx) - 0.15) / 0.7) : 0;
-  input.y = Math.abs(ny) > 0.35 ? Math.sign(ny) : 0;
+  input.x = Math.abs(nx) > 0.16 ? Math.sign(nx) * Math.min(1, (Math.abs(nx) - 0.14) / 0.7) : 0;
+  input.y = Math.abs(ny) > 0.4 ? Math.sign(ny) : 0;
 }
 
-// Правые кнопки слэшера
 function bindBtn(id, onDown, onUp) {
   const el = document.getElementById(id);
   el.addEventListener('pointerdown', (e) => {
@@ -487,9 +500,9 @@ function bindBtn(id, onDown, onUp) {
 bindBtn('btn-jmp', () => { input.jumpHeld = true; input.jumpBuffer = 0.15; }, () => { input.jumpHeld = false; });
 bindBtn('btn-atk', () => { input.atkBuffered = true; });
 bindBtn('btn-dash', () => { input.dashBuffered = true; });
+bindBtn('btn-parry', () => { input.parryBuffered = true; });
 bindBtn('btn-use', () => { input.usePressed = true; });
 
-// Клавиатура (для отладки)
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyA' || e.code === 'ArrowLeft') input.x = -1;
   if (e.code === 'KeyD' || e.code === 'ArrowRight') input.x = 1;
@@ -498,7 +511,8 @@ window.addEventListener('keydown', (e) => {
     if (!input.jumpHeld) input.jumpBuffer = 0.15;
     input.jumpHeld = true;
   }
-  if (e.code === 'KeyJ' || e.code === 'KeyK') input.atkBuffered = true;
+  if (e.code === 'KeyJ') input.atkBuffered = true;
+  if (e.code === 'KeyK') input.parryBuffered = true;
   if (e.code === 'ShiftLeft' || e.code === 'KeyL') input.dashBuffered = true;
   if (e.code === 'KeyE') input.usePressed = true;
 });
@@ -510,49 +524,73 @@ window.addEventListener('keyup', (e) => {
 });
 
 // =====================================================
-// 5. ИГРОВОЙ МИР, ПРОЦЕДУРНАЯ ГЕНЕРАЦИЯ ЗАЛОВ И ЧАСТИЦ
+// 5. ИГРОВОЙ МИР, ИГРОК И ГЕНЕРАЦИЯ ЗАЛОВ
 // =====================================================
-let hitstopTimer = 0; // микро-пауза при попадании мечом (Game Feel!)
+let hitstopTimer = 0;
 const cam = { x: 0, y: 0, shake: 0 };
 
 const player = {
-  x: 160, y: 300, w: 28, h: 48,
+  x: 140, y: 350, w: 26, h: 46,
   vx: 0, vy: 0,
   facing: 1,
   grounded: false,
   coyoteTimer: 0,
   wallDir: 0,
-  moveSpeed: 330,
+  moveSpeed: 320,
   hp: 100, maxHp: 100,
-  dmg: 22,
+  dmg: 24,
   critChance: 0.15,
   vampOnKill: 0,
   rangeBonus: 0,
   chainLightning: false,
   souls: 0,
   relics: [],
-  // Боёвка и стейты
   comboStep: 0,
   comboWindow: 0,
   atkTimer: 0,
   downSmash: false,
   dashTimer: 0,
   dashCd: 0,
-  dashCdMax: 0.65,
+  dashCdMax: 0.6,
+  parryWindow: 0,
+  parryCd: 0,
   invuln: 0,
-  scarf: [] // физический развевающийся плащ/шарф
+  animTime: 0,
+  scarf: []
 };
-for (let i = 0; i < 7; i++) player.scarf.push({ x: player.x, y: player.y });
+for (let i = 0; i < 6; i++) player.scarf.push({ x: player.x, y: player.y });
 
 let roomIndex = 1;
+let roomWidth = 2200;
+const FLOOR_Y = 440;
 let platforms = [];
 let enemies = [];
 let particles = [];
+let ashFlakes = [];
+let torches = [];
 let slashArcs = [];
 let floatTexts = [];
 let shrine = null;
 let portal = null;
 let bgPillars = [];
+
+// Падающий атмосферный пепел
+for (let i = 0; i < 45; i++) {
+  ashFlakes.push({
+    x: Math.random() * 2000,
+    y: Math.random() * 500,
+    r: 1 + Math.random() * 2,
+    vx: -15 - Math.random() * 20,
+    vy: 18 + Math.random() * 25
+  });
+}
+
+function resetScarf() {
+  for (let i = 0; i < player.scarf.length; i++) {
+    player.scarf[i].x = player.x + player.w / 2 - player.facing * i * 4;
+    player.scarf[i].y = player.y + 12;
+  }
+}
 
 function spawnParticles(x, y, color, count = 12, speed = 220, gravity = 500) {
   for (let i = 0; i < count; i++) {
@@ -565,17 +603,16 @@ function spawnParticles(x, y, color, count = 12, speed = 220, gravity = 500) {
       size: 2.5 + Math.random() * 4,
       color,
       gravity,
-      life: 0.35 + Math.random() * 0.35,
-      maxLife: 0.7
+      life: 0.3 + Math.random() * 0.35,
+      maxLife: 0.65
     });
   }
 }
 
 function addFloatText(x, y, text, color = '#f5efe6', big = false) {
-  floatTexts.push({ x, y, text, color, big, vy: -90, life: 0.75 });
+  floatTexts.push({ x, y, text, color, big, vy: -85, life: 0.8 });
 }
 
-// Процедурный генератор зала (платформы, стены для паркура, враги, святилище)
 function generateRoom(num) {
   roomIndex = num;
   platforms = [];
@@ -583,63 +620,63 @@ function generateRoom(num) {
   particles = [];
   slashArcs = [];
   bgPillars = [];
+  torches = [];
 
-  const roomW = 1900 + num * 180;
-  const floorY = 460;
+  roomWidth = 1850 + num * 180;
 
-  // Основной каменный пол и потолок/стены по краям
-  platforms.push({ x: -120, y: floorY, w: roomW + 240, h: 180, type: 'solid' });
-  platforms.push({ x: -120, y: -300, w: 120, h: 900, type: 'wall' });
-  platforms.push({ x: roomW, y: -300, w: 120, h: 900, type: 'wall' });
+  // Каменный пол и боковые стены
+  platforms.push({ x: -160, y: FLOOR_Y, w: roomWidth + 320, h: 240, type: 'floor' });
+  platforms.push({ x: -120, y: -400, w: 120, h: 1000, type: 'wall' });
+  platforms.push({ x: roomWidth, y: -400, w: 120, h: 1000, type: 'wall' });
 
-  // Фоновые готические колонны
-  for (let x = 150; x < roomW; x += 260) {
-    bgPillars.push({ x, w: 48 + (x % 30), h: 520 });
+  // Готические колонны и горящие факелы
+  for (let x = 140; x < roomWidth - 100; x += 240) {
+    bgPillars.push({ x, w: 54, h: 500 });
+    torches.push({ x: x + 27, y: FLOOR_Y - 135, flicker: Math.random() * 10 });
   }
 
-  // Генерация паркур-секций, башен для Wall-Jump и платформ
-  let cursorX = 280;
-  while (cursorX < roomW - 380) {
+  // Генерация платформ, башен для Wall-Jump и врагов
+  let cursorX = 320;
+  while (cursorX < roomWidth - 400) {
     const pat = Math.floor(Math.random() * 3);
     if (pat === 0) {
-      // Двухуровневые платформы
-      platforms.push({ x: cursorX, y: floorY - 115, w: 190, h: 22, type: 'plat' });
-      platforms.push({ x: cursorX + 90, y: floorY - 235, w: 160, h: 22, type: 'plat' });
-      spawnEnemyAt(cursorX + 95, floorY - 115, num);
+      platforms.push({ x: cursorX, y: FLOOR_Y - 110, w: 190, h: 20, type: 'plat' });
+      platforms.push({ x: cursorX + 95, y: FLOOR_Y - 220, w: 165, h: 20, type: 'plat' });
+      spawnEnemyAt(cursorX + 80, FLOOR_Y - 110, num);
       cursorX += 340;
     } else if (pat === 1) {
-      // Каменная колонна для отскока от стен (Wall Jump)
-      platforms.push({ x: cursorX + 40, y: floorY - 250, w: 44, h: 250, type: 'wall' });
-      platforms.push({ x: cursorX + 160, y: floorY - 210, w: 170, h: 22, type: 'plat' });
-      spawnEnemyAt(cursorX + 230, floorY - 210, num);
-      cursorX += 390;
+      // Колонна для отскока от стены
+      platforms.push({ x: cursorX + 35, y: FLOOR_Y - 230, w: 42, h: 230, type: 'wall' });
+      platforms.push({ x: cursorX + 150, y: FLOOR_Y - 195, w: 175, h: 20, type: 'plat' });
+      spawnEnemyAt(cursorX + 220, FLOOR_Y - 195, num);
+      cursorX += 380;
     } else {
-      // Арена с надстройкой
-      platforms.push({ x: cursorX, y: floorY - 145, w: 250, h: 24, type: 'plat' });
-      spawnEnemyAt(cursorX + 120, floorY - 145, num);
-      spawnEnemyAt(cursorX + 180, floorY, num);
-      cursorX += 360;
+      platforms.push({ x: cursorX, y: FLOOR_Y - 135, w: 240, h: 22, type: 'plat' });
+      spawnEnemyAt(cursorX + 110, FLOOR_Y - 135, num);
+      spawnEnemyAt(cursorX + 160, FLOOR_Y, num);
+      cursorX += 350;
     }
-    // Враги на первом ярусе
-    if (Math.random() < 0.85) spawnEnemyAt(cursorX - 120, floorY, num);
+    if (Math.random() < 0.85) spawnEnemyAt(cursorX - 110, FLOOR_Y, num);
   }
 
-  // Алтарь реликвии в середине зала
-  shrine = {
-    x: Math.floor(roomW * 0.48),
-    y: floorY,
-    used: false
-  };
+  shrine = { x: Math.floor(roomWidth * 0.48), y: FLOOR_Y, used: false };
+  portal = { x: roomWidth - 130, y: FLOOR_Y };
 
-  // Врата в следующий зал в конце уровня
-  portal = {
-    x: roomW - 140,
-    y: floorY
-  };
-
+  // Спавн строго НАД полом, чтобы исключить проваливание!
   player.x = 110;
-  player.y = floorY - player.h;
-  player.vx = 0; player.vy = 0;
+  player.y = FLOOR_Y - player.h - 4;
+  player.vx = 0;
+  player.vy = 0;
+  player.grounded = true;
+  player.downSmash = false;
+  resetScarf();
+
+  // Мгновенная центровка камеры на старте комнаты
+  const scale = H / VIEW_H;
+  const viewW = W / scale;
+  cam.x = Math.max(-40, player.x - viewW * 0.35);
+  cam.y = FLOOR_Y - VIEW_H * 0.82;
+
   updateHUD();
 }
 
@@ -649,34 +686,33 @@ function spawnEnemyAt(x, groundY, level) {
   const isWarden = type === 'warden';
   const isWraith = type === 'wraith';
 
-  const w = isWarden ? 38 : 28;
-  const h = isWarden ? 56 : (isWraith ? 42 : 46);
+  const w = isWarden ? 36 : 26;
+  const h = isWarden ? 54 : (isWraith ? 42 : 44);
   const maxHp = Math.round((isWarden ? 95 : (isWraith ? 55 : 65)) * (1 + (level - 1) * 0.25));
 
   enemies.push({
     type,
-    x, y: groundY - h, w, h,
+    x, y: groundY - h - 2, w, h,
     vx: 0, vy: 0,
     hp: maxHp, maxHp,
     dmg: Math.round((isWarden ? 24 : 15) * (1 + (level - 1) * 0.18)),
     facing: -1,
-    state: 'patrol',
+    state: 'chase',
     timer: 0,
-    atkCooldown: 0,
+    atkCooldown: 0.4,
     flashTimer: 0
   });
 }
 
 // =====================================================
-// 6. БОЕВАЯ СИСТЕМА И РЕЛИКВИИ
+// 6. БОЁВКА, ПАРИРОВАНИЕ И АЛТАРИ
 // =====================================================
 function performAttack() {
   input.atkBuffered = false;
 
-  // Удар в падении (Down-Smash), если в воздухе зажат стик вниз
   if (!player.grounded && input.y > 0.4) {
     player.downSmash = true;
-    player.vy = 680;
+    player.vy = 690;
     player.atkTimer = 0.35;
     sfx.slash(3);
     return;
@@ -690,19 +726,16 @@ function performAttack() {
 
   const isFinisher = player.comboStep === 3;
   player.atkTimer = isFinisher ? 0.24 : 0.16;
-  player.comboWindow = 0.52;
-
-  // Выпад вперёд при взмахе
-  player.vx = player.facing * (isFinisher ? 340 : 190);
+  player.comboWindow = 0.55;
+  player.vx = player.facing * (isFinisher ? 310 : 175);
   sfx.slash(player.comboStep);
 
-  const reach = (isFinisher ? 78 : 60) + player.rangeBonus;
-  const hitX = player.facing === 1 ? player.x + player.w * 0.5 : player.x + player.w * 0.5 - reach;
-  const hitY = player.y - 8;
+  const reach = (isFinisher ? 80 : 62) + player.rangeBonus;
+  const hitX = player.facing === 1 ? player.x + player.w * 0.4 : player.x + player.w * 0.6 - reach;
+  const hitY = player.y - 10;
   const hitW = reach;
-  const hitH = player.h + 16;
+  const hitH = player.h + 18;
 
-  // Дуга взмаха для рендера
   slashArcs.push({
     x: player.x + player.w / 2,
     y: player.y + player.h / 2,
@@ -713,16 +746,15 @@ function performAttack() {
     maxLife: 0.16
   });
 
-  // Проверка попадания по врагам
   let hitAny = false;
   enemies.forEach(e => {
     if (rectOverlap(hitX, hitY, hitW, hitH, e.x, e.y, e.w, e.h)) {
       hitAny = true;
-      const isCrit = isFinisher || Math.random() < player.critChance;
-      const dmg = Math.round(player.dmg * (isFinisher ? 1.45 : 1.0) * (isCrit ? 1.75 : 1.0));
-      damageEnemy(e, dmg, player.facing * (isFinisher ? 340 : 210), isCrit);
+      const stunnedBonus = e.state === 'stunned' ? 1.8 : 1.0;
+      const isCrit = isFinisher || e.state === 'stunned' || Math.random() < player.critChance;
+      const dmg = Math.round(player.dmg * (isFinisher ? 1.45 : 1.0) * (isCrit ? 1.7 : 1.0) * stunnedBonus);
+      damageEnemy(e, dmg, player.facing * (isFinisher ? 320 : 190), isCrit);
 
-      // Цепная молния от реликвии
       if (isFinisher && player.chainLightning) {
         enemies.forEach(other => {
           if (other !== e && Math.hypot(other.x - e.x, other.y - e.y) < 220) {
@@ -734,8 +766,8 @@ function performAttack() {
   });
 
   if (hitAny) {
-    hitstopTimer = isFinisher ? 0.065 : 0.035;
-    cam.shake = isFinisher ? 9 : 4.5;
+    hitstopTimer = isFinisher ? 0.06 : 0.032;
+    cam.shake = isFinisher ? 8.5 : 4;
     if (navigator.vibrate) navigator.vibrate(isFinisher ? 35 : 15);
   }
 }
@@ -743,18 +775,19 @@ function performAttack() {
 function damageEnemy(e, dmg, knockVx, isCrit, customColor = null) {
   e.hp -= dmg;
   e.vx = knockVx;
-  e.vy = -140;
+  e.vy = -130;
   e.flashTimer = 0.12;
-  // Сбиваем замах обычным врагам
-  if (e.type !== 'warden' || isCrit) e.state = 'stagger';
-  e.timer = 0.22;
+  if (e.state !== 'stunned' && (e.type !== 'warden' || isCrit)) {
+    e.state = 'stagger';
+    e.timer = 0.24;
+  }
 
   sfx.hit(isCrit);
-  spawnParticles(e.x + e.w / 2, e.y + e.h / 2, customColor || (isCrit ? '#ffbe42' : '#d93848'), isCrit ? 18 : 10, 280);
-  addFloatText(e.x + e.w / 2, e.y - 6, isCrit ? `${dmg}!` : `${dmg}`, isCrit ? '#ffbe42' : '#f5efe6', isCrit);
+  spawnParticles(e.x + e.w / 2, e.y + e.h / 2, customColor || (isCrit ? '#ffbe42' : '#d93848'), isCrit ? 16 : 9, 260);
+  addFloatText(e.x + e.w / 2, e.y - 8, isCrit ? `${dmg}!` : `${dmg}`, isCrit ? '#ffbe42' : '#f5efe6', isCrit);
 
   if (e.hp <= 0) {
-    spawnParticles(e.x + e.w / 2, e.y + e.h / 2, '#9e1b28', 24, 340);
+    spawnParticles(e.x + e.w / 2, e.y + e.h / 2, '#9e1b28', 22, 320);
     player.souls += e.type === 'warden' ? 25 : 12;
     if (player.vampOnKill > 0) {
       player.hp = Math.min(player.maxHp, player.hp + player.vampOnKill);
@@ -767,7 +800,6 @@ function rectOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
 
-// Модальное окно выбора реликвии у Алтаря
 const relicModal = document.getElementById('relic-modal');
 const cardsContainer = document.getElementById('cards-container');
 let pausedForModal = false;
@@ -795,9 +827,9 @@ function openRelicModal() {
 }
 
 // =====================================================
-// 7. ФИЗИКА И ОБНОВЛЕНИЕ СОСТОЯНИЯ
+// 7. ИСПРАВЛЕННАЯ ФИЗИКА И КОЛЛИЗИИ (БЕЗ ПРОВАЛА СКВОЗЬ ПОЛ)
 // =====================================================
-const GRAVITY = 1550;
+const GRAVITY = 1520;
 
 function update(dt) {
   if (pausedForModal) return;
@@ -806,37 +838,49 @@ function update(dt) {
     return;
   }
 
-  // Таймеры игрока
+  player.animTime += dt;
   if (input.jumpBuffer > 0) input.jumpBuffer -= dt;
   if (player.coyoteTimer > 0) player.coyoteTimer -= dt;
   if (player.atkTimer > 0) player.atkTimer -= dt;
   if (player.comboWindow > 0) player.comboWindow -= dt;
   if (player.dashTimer > 0) player.dashTimer -= dt;
   if (player.dashCd > 0) player.dashCd -= dt;
+  if (player.parryWindow > 0) player.parryWindow -= dt;
+  if (player.parryCd > 0) player.parryCd -= dt;
   if (player.invuln > 0) player.invuln -= dt;
 
-  // 1. Рывок сквозь врагов (Dash с i-frames)
+  // 1. Парирование щитом (Parry)
+  if (input.parryBuffered && player.parryCd <= 0 && player.dashTimer <= 0) {
+    input.parryBuffered = false;
+    player.parryWindow = 0.28;
+    player.parryCd = 0.55;
+    player.vx *= 0.2;
+    sfx.slash(1);
+  }
+  input.parryBuffered = false;
+
+  // 2. Рывок (Dash с неуязвимостью)
   if (input.dashBuffered && player.dashCd <= 0 && player.dashTimer <= 0) {
     input.dashBuffered = false;
     player.dashTimer = 0.18;
     player.dashCd = player.dashCdMax;
-    player.invuln = 0.24;
+    player.invuln = 0.25;
     player.downSmash = false;
     if (input.x !== 0) player.facing = Math.sign(input.x);
-    player.vx = player.facing * 690;
+    player.vx = player.facing * 680;
     player.vy = 0;
     sfx.dash();
     spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#c4a46c', 10, 160, 0);
   }
   input.dashBuffered = false;
 
-  // 2. Атака
+  // 3. Атака мечом
   if (input.atkBuffered && player.atkTimer <= 0 && player.dashTimer <= 0) {
     performAttack();
   }
 
-  // 3. Горизонтальное движение
-  if (player.dashTimer <= 0 && player.atkTimer <= 0) {
+  // 4. Горизонтальная скорость
+  if (player.dashTimer <= 0 && player.atkTimer <= 0 && player.parryWindow <= 0) {
     if (input.x !== 0) {
       player.facing = Math.sign(input.x);
       const targetVx = input.x * player.moveSpeed;
@@ -848,24 +892,19 @@ function update(dt) {
     player.vx *= Math.pow(0.02, dt);
   }
 
-  // 4. Гравитация и скольжение по стенам
+  // 5. Гравитация и Wall-Slide
   if (player.dashTimer <= 0) {
     let g = GRAVITY;
-    // Если отпустил кнопку прыжка на взлёте — режем высоту (Variable Jump)
-    if (player.vy < 0 && !input.jumpHeld) g *= 2.35;
-    if (player.vy > 0) g *= 1.25;
-    player.vy += g * dt;
+    if (player.vy < 0 && !input.jumpHeld) g *= 2.3;
+    if (player.vy > 0) g *= 1.2;
+    player.vy = Math.min(920, player.vy + g * dt);
 
-    // Замедленное скольжение по стене (Wall Slide)
-    if (player.wallDir !== 0 && !player.grounded && player.vy > 110 && Math.sign(input.x) === player.wallDir) {
-      player.vy = 110;
-      if (Math.random() < 0.35) {
-        spawnParticles(player.x + (player.wallDir > 0 ? player.w : 0), player.y + 15, '#7a7e8a', 1, 40, 100);
-      }
+    if (player.wallDir !== 0 && !player.grounded && player.vy > 105 && Math.sign(input.x) === player.wallDir) {
+      player.vy = 105;
     }
   }
 
-  // 5. Прыжок (обычный с Coyote Time ИЛИ отскок от стены Wall Jump)
+  // 6. Прыжок и Wall-Jump
   if (input.jumpBuffer > 0) {
     if (player.coyoteTimer > 0) {
       player.vy = -560;
@@ -875,9 +914,8 @@ function update(dt) {
       sfx.jump();
       spawnParticles(player.x + player.w / 2, player.y + player.h, '#9296a0', 7, 120, 200);
     } else if (player.wallDir !== 0 && !player.grounded) {
-      // Отскок от стены!
       player.vy = -530;
-      player.vx = -player.wallDir * 420;
+      player.vx = -player.wallDir * 410;
       player.facing = -player.wallDir;
       player.wallDir = 0;
       input.jumpBuffer = 0;
@@ -886,53 +924,69 @@ function update(dt) {
     }
   }
 
-  // 6. Перемещение и коллизии с платформами/стенами
+  // 7. ГОРИЗОНТАЛЬНОЕ ДВИЖЕНИЕ (проверяем только реальные стены выше стоп!)
   player.x += player.vx * dt;
   player.wallDir = 0;
   for (const p of platforms) {
-    if (p.type !== 'plat' && rectOverlap(player.x, player.y, player.w, player.h, p.x, p.y, p.w, p.h)) {
-      if (player.vx > 0) {
-        player.x = p.x - player.w;
-        player.wallDir = 1;
-      } else if (player.vx < 0) {
-        player.x = p.x + p.w;
-        player.wallDir = -1;
+    if (p.type === 'wall') {
+      // Игнорируем нижние и верхние кромки в 4px, чтобы не цеплять пол как стену
+      if (rectOverlap(player.x, player.y + 4, player.w, player.h - 8, p.x, p.y, p.w, p.h)) {
+        if (player.vx > 0 || (player.x + player.w / 2 < p.x + p.w / 2)) {
+          player.x = p.x - player.w;
+          player.wallDir = 1;
+        } else {
+          player.x = p.x + p.w;
+          player.wallDir = -1;
+        }
+        player.vx = 0;
       }
-      player.vx = 0;
     }
   }
 
+  // 8. ВЕРТИКАЛЬНОЕ ДВИЖЕНИЕ (Swept Landing — невозможно пробить пол!)
   const prevBottom = player.y + player.h;
   player.y += player.vy * dt;
   player.grounded = false;
 
   for (const p of platforms) {
     if (p.type === 'plat') {
-      // Полупрозрачная платформа (можно запрыгнуть снизу или спрыгнуть вниз)
-      if (player.vy >= 0 && prevBottom <= p.y + 10 && !(input.y > 0.55) &&
-          rectOverlap(player.x, player.y, player.w, player.h, p.x, p.y, p.w, p.h)) {
+      if (player.vy >= 0 && prevBottom <= p.y + 14 && !(input.y > 0.55) &&
+          player.x + player.w > p.x + 2 && player.x < p.x + p.w - 2 &&
+          player.y + player.h >= p.y && player.y + player.h <= p.y + 28) {
         landOn(p.y);
       }
-    } else if (rectOverlap(player.x, player.y, player.w, player.h, p.x, p.y, p.w, p.h)) {
-      if (player.vy > 0) {
-        landOn(p.y);
-      } else if (player.vy < 0) {
-        player.y = p.y + p.h;
-        player.vy = 0;
+    } else if (p.type === 'floor' || p.type === 'wall') {
+      if (rectOverlap(player.x + 2, player.y, player.w - 4, player.h, p.x, p.y, p.w, p.h)) {
+        if (player.vy >= 0 && prevBottom <= p.y + 24) {
+          landOn(p.y);
+        } else if (player.vy < 0 && player.y >= p.y + p.h - 24) {
+          player.y = p.y + p.h;
+          player.vy = 0;
+        } else if (p.type === 'floor') {
+          // Жёсткая защита: если каким-то образом оказались внутри основного пола, выталкиваем наверх
+          landOn(p.y);
+        }
       }
     }
+  }
+
+  // Аварийный возврат, если улетел ниже арены
+  if (player.y > FLOOR_Y + 80) {
+    player.y = FLOOR_Y - player.h - 2;
+    player.vy = 0;
+    player.grounded = true;
+    resetScarf();
   }
 
   function landOn(surfaceY) {
     player.y = surfaceY - player.h;
     if (player.downSmash) {
-      // Взрывная волна при приземлении с ударом в падении!
       player.downSmash = false;
       cam.shake = 11;
       sfx.hit(true);
       spawnParticles(player.x + player.w / 2, surfaceY, '#e05364', 24, 340);
       enemies.forEach(e => {
-        if (Math.abs((e.x + e.w / 2) - (player.x + player.w / 2)) < 135 && Math.abs((e.y + e.h) - surfaceY) < 60) {
+        if (Math.abs((e.x + e.w / 2) - (player.x + player.w / 2)) < 140 && Math.abs((e.y + e.h) - surfaceY) < 65) {
           damageEnemy(e, Math.round(player.dmg * 1.6), Math.sign(e.x - player.x) * 320, true);
         }
       });
@@ -942,16 +996,23 @@ function update(dt) {
     player.coyoteTimer = 0.12;
   }
 
-  // Физика шарфа за спиной героя
-  let leadX = player.x + player.w / 2 - player.facing * 6;
-  let leadY = player.y + 10;
+  // Физика плаща с ограничением максимальной длины сегмента
+  let leadX = player.x + player.w / 2 - player.facing * 5;
+  let leadY = player.y + 11;
   player.scarf.forEach((node, idx) => {
-    node.x += (leadX - node.x - player.facing * 5) * Math.min(1, dt * (22 - idx * 2));
-    node.y += (leadY - node.y + Math.sin(performance.now() * 0.015 + idx) * 2) * Math.min(1, dt * 18);
+    node.x += (leadX - node.x - player.facing * 5) * Math.min(1, dt * (24 - idx * 2));
+    node.y += (leadY - node.y + Math.sin(performance.now() * 0.015 + idx) * 1.8) * Math.min(1, dt * 20);
+    // Защита от растягивания на весь экран
+    const dist = Math.hypot(node.x - leadX, node.y - leadY);
+    if (dist > 16) {
+      const ang = Math.atan2(node.y - leadY, node.x - leadX);
+      node.x = leadX + Math.cos(ang) * 10;
+      node.y = leadY + Math.sin(ang) * 10;
+    }
     leadX = node.x; leadY = node.y;
   });
 
-  // 7. Обновление врагов (ИИ, телеграф атаки, удары)
+  // 9. ИИ Врагов и проверка ПАРИРОВАНИЯ
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
     if (e.hp <= 0) {
@@ -965,65 +1026,81 @@ function update(dt) {
     const dy = (player.y + player.h / 2) - (e.y + e.h / 2);
     const dist = Math.hypot(dx, dy);
 
-    if (e.state === 'stagger') {
+    if (e.state === 'stunned' || e.state === 'stagger') {
       e.timer -= dt;
       e.vx *= Math.pow(0.01, dt);
       if (e.timer <= 0) e.state = 'chase';
     } else if (e.state === 'windup') {
-      // Фаза замаха (жёлтая/алая вспышка перед ударом — время для переката!)
       e.vx *= 0.85;
       e.timer -= dt;
       if (e.timer <= 0) {
         e.state = 'strike';
         e.timer = 0.16;
-        e.vx = e.facing * (e.type === 'warden' ? 360 : 440);
-        // Проверка урона игроку
-        if (Math.abs(dx) < (e.type === 'warden' ? 75 : 58) && Math.abs(dy) < 52) {
-          hurtPlayer(e.dmg, e.facing * 280);
+        e.vx = e.facing * (e.type === 'warden' ? 340 : 420);
+
+        if (Math.abs(dx) < (e.type === 'warden' ? 76 : 60) && Math.abs(dy) < 52) {
+          // ПРОВЕРКА УСПЕШНОГО ПАРИРОВАНИЯ ЩИТОМ!
+          if (player.parryWindow > 0) {
+            sfx.parryClang();
+            hitstopTimer = 0.09;
+            cam.shake = 12;
+            e.state = 'stunned';
+            e.timer = 2.0; // Оглушение на 2 секунды
+            e.vx = -e.facing * 260;
+            spawnParticles(player.x + player.w / 2 + player.facing * 14, player.y + 20, '#6ab0e8', 22, 320);
+            addFloatText(e.x + e.w / 2, e.y - 16, 'ПАРИРОВАНИЕ!', '#6ab0e8', true);
+            if (navigator.vibrate) navigator.vibrate([30, 20, 50]);
+          } else {
+            hurtPlayer(e.dmg, e.facing * 260);
+          }
         }
       }
     } else if (e.state === 'strike') {
       e.timer -= dt;
       if (e.timer <= 0) {
         e.state = 'chase';
-        e.atkCooldown = e.type === 'warden' ? 1.15 : 0.75;
+        e.atkCooldown = e.type === 'warden' ? 1.2 : 0.8;
       }
     } else {
-      // Преследование игрока
       if (dist < 420) {
         e.facing = dx >= 0 ? 1 : -1;
-        const spd = e.type === 'warden' ? 115 : (e.type === 'wraith' ? 210 : 165);
+        const spd = e.type === 'warden' ? 110 : (e.type === 'wraith' ? 200 : 160);
         if (Math.abs(dx) > 44) {
           e.vx += (e.facing * spd - e.vx) * dt * 8;
         } else if (e.atkCooldown <= 0 && Math.abs(dy) < 55) {
           e.state = 'windup';
-          e.timer = e.type === 'warden' ? 0.48 : 0.34; // честное окно для уклонения!
+          e.timer = e.type === 'warden' ? 0.52 : 0.38;
         }
       } else {
         e.vx *= 0.9;
       }
     }
 
-    // Физика врага
     if (e.type !== 'wraith') {
-      e.vy += GRAVITY * dt;
+      const prevEBottom = e.y + e.h;
+      e.vy = Math.min(800, e.vy + GRAVITY * dt);
       e.x += e.vx * dt;
       e.y += e.vy * dt;
       for (const p of platforms) {
-        if (e.vy >= 0 && rectOverlap(e.x, e.y, e.w, e.h, p.x, p.y, p.w, p.h)) {
+        if (e.vy >= 0 && prevEBottom <= p.y + 18 &&
+            e.x + e.w > p.x && e.x < p.x + p.w &&
+            e.y + e.h >= p.y && e.y + e.h <= p.y + 30) {
           e.y = p.y - e.h;
           e.vy = 0;
         }
       }
+      if (e.y > FLOOR_Y - e.h) {
+        e.y = FLOOR_Y - e.h;
+        e.vy = 0;
+      }
     } else {
-      // Призрак парит по воздуху напрямую к герою
       e.x += e.vx * dt;
-      const targetY = player.y - 6;
+      const targetY = Math.min(FLOOR_Y - e.h - 10, player.y - 6);
       e.y += (targetY - e.y) * dt * 2.5;
     }
   }
 
-  // 8. Проверка интерактивных объектов (Алтарь и Врата)
+  // 10. Взаимодействие с Алтарём и Вратами
   const useBtn = document.getElementById('btn-use');
   const nearShrine = shrine && !shrine.used && Math.hypot(player.x - shrine.x, (player.y + player.h) - shrine.y) < 75;
   const nearPortal = portal && enemies.length === 0 && Math.hypot(player.x - portal.x, (player.y + player.h) - portal.y) < 85;
@@ -1041,7 +1118,7 @@ function update(dt) {
     input.usePressed = false;
   }
 
-  // 9. Частицы, дуги меча и всплывающие цифры
+  // 11. Частицы и пепел
   for (let i = particles.length - 1; i >= 0; i--) {
     const pt = particles[i];
     pt.vy += pt.gravity * dt;
@@ -1061,13 +1138,13 @@ function update(dt) {
     if (ft.life <= 0) floatTexts.splice(i, 1);
   }
 
-  // Плавная камера с упреждением по взгляду героя
+  // 12. Плавная камера с жёстким ограничением по полу
   const scale = H / VIEW_H;
   const viewW = W / scale;
-  const targetCamX = player.x + player.w / 2 + player.facing * 65 - viewW / 2;
-  const targetCamY = player.y - VIEW_H * 0.58;
+  const targetCamX = Math.max(-60, Math.min(roomWidth - viewW + 60, player.x + player.w / 2 + player.facing * 55 - viewW / 2));
+  const targetCamY = Math.min(FLOOR_Y - VIEW_H + 65, player.y - VIEW_H * 0.56);
   cam.x += (targetCamX - cam.x) * Math.min(1, dt * 8);
-  cam.y += (targetCamY - cam.y) * Math.min(1, dt * 6);
+  cam.y += (targetCamY - cam.y) * Math.min(1, dt * 7);
   if (cam.shake > 0) cam.shake = Math.max(0, cam.shake - dt * 28);
 
   updateHUD();
@@ -1078,7 +1155,7 @@ function hurtPlayer(dmg, knockVx) {
   player.hp -= dmg;
   player.invuln = 0.65;
   player.vx = knockVx;
-  player.vy = -210;
+  player.vy = -200;
   cam.shake = 12;
   sfx.hit(true);
   spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#d93848', 18, 260);
@@ -1086,9 +1163,8 @@ function hurtPlayer(dmg, knockVx) {
   if (navigator.vibrate) navigator.vibrate(100);
 
   if (player.hp <= 0) {
-    // Возрождение в Зале I (рогалик-цикл)
     player.hp = 100; player.maxHp = 100;
-    player.dmg = 22; player.critChance = 0.15;
+    player.dmg = 24; player.critChance = 0.15;
     player.vampOnKill = 0; player.rangeBonus = 0;
     player.chainLightning = false;
     player.relics = [];
@@ -1112,10 +1188,13 @@ function updateHUD() {
 }
 
 // =====================================================
-// 8. ОТРИСОВКА МИРА (ГОТИЧЕСКИЙ СЕРЫЙ ФЭНТЕЗИ-РЕНДЕР)
+// 8. ГОТИЧЕСКИЙ РЕНДЕР (АРКИ, ФАКЕЛЫ, РЫЦАРЬ, МОНСТРЫ)
 // =====================================================
 function render() {
-  ctx.fillStyle = '#0b0c10';
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#090a10');
+  grad.addColorStop(1, '#141722');
+  ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
   const scale = H / VIEW_H;
@@ -1126,88 +1205,129 @@ function render() {
   const sy = (Math.random() - 0.5) * cam.shake;
   ctx.translate(-cam.x + sx, -cam.y + sy);
 
-  // 1. Параллакс-колонны на фоне
-  ctx.fillStyle = '#12141c';
+  const now = performance.now();
+
+  // 1. Готические колонны и своды на фоне
   bgPillars.forEach(b => {
-    const px = b.x + cam.x * 0.25;
-    ctx.fillRect(px, 40, b.w, b.h);
-    ctx.fillStyle = '#191c26';
-    ctx.fillRect(px + 6, 40, 8, b.h);
-    ctx.fillStyle = '#12141c';
+    const px = b.x - cam.x * 0.15;
+    ctx.fillStyle = '#11131c';
+    ctx.fillRect(px, -40, b.w, b.h);
+    ctx.fillStyle = '#181b28';
+    ctx.fillRect(px + 8, -40, 10, b.h);
+    ctx.strokeStyle = '#222638';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(px, -40, b.w, b.h);
   });
 
-  // 2. Алтарь реликвий
+  // 2. Горящие факелы с мягким свечением
+  torches.forEach(t => {
+    const rad = 58 + Math.sin(now * 0.012 + t.flicker) * 7;
+    const tGrad = ctx.createRadialGradient(t.x, t.y, 4, t.x, t.y, rad);
+    tGrad.addColorStop(0, 'rgba(255, 165, 60, 0.35)');
+    tGrad.addColorStop(1, 'rgba(255, 120, 30, 0)');
+    ctx.fillStyle = tGrad;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, rad, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#3a2b22';
+    ctx.fillRect(t.x - 3, t.y, 6, 18);
+    ctx.fillStyle = '#ffae38';
+    ctx.beginPath();
+    ctx.arc(t.x, t.y - 3, 5 + Math.sin(now * 0.02 + t.flicker) * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 3. Алтарь Предков
   if (shrine) {
     ctx.fillStyle = shrine.used ? '#2b2d38' : '#c4a46c';
     ctx.beginPath();
-    ctx.moveTo(shrine.x - 18, shrine.y);
-    ctx.lineTo(shrine.x, shrine.y - 54);
-    ctx.lineTo(shrine.x + 18, shrine.y);
+    ctx.moveTo(shrine.x - 20, shrine.y);
+    ctx.lineTo(shrine.x, shrine.y - 58);
+    ctx.lineTo(shrine.x + 20, shrine.y);
     ctx.closePath();
     ctx.fill();
     if (!shrine.used) {
       ctx.fillStyle = 'rgba(196, 164, 108, 0.22)';
       ctx.beginPath();
-      ctx.arc(shrine.x, shrine.y - 32, 34 + Math.sin(performance.now() * 0.006) * 5, 0, Math.PI * 2);
+      ctx.arc(shrine.x, shrine.y - 32, 36 + Math.sin(now * 0.006) * 5, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
-  // 3. Врата в следующий зал
+  // 4. Врата перехода
   if (portal) {
     const active = enemies.length === 0;
     ctx.strokeStyle = active ? '#68e09c' : '#3a3d4a';
     ctx.lineWidth = 5;
-    ctx.strokeRect(portal.x - 24, portal.y - 76, 48, 76);
+    ctx.strokeRect(portal.x - 24, portal.y - 78, 48, 78);
     if (active) {
       ctx.fillStyle = 'rgba(104, 224, 156, 0.25)';
-      ctx.fillRect(portal.x - 20, portal.y - 72, 40, 72);
+      ctx.fillRect(portal.x - 20, portal.y - 74, 40, 74);
     }
   }
 
-  // 4. Платформы и каменная кладка
+  // 5. Каменные платформы и плиты пола
   platforms.forEach(p => {
-    ctx.fillStyle = p.type === 'plat' ? '#2c303d' : '#181a22';
+    ctx.fillStyle = p.type === 'plat' ? '#282c3a' : '#171922';
     ctx.fillRect(p.x, p.y, p.w, p.h);
-    ctx.strokeStyle = p.type === 'plat' ? '#687089' : '#35394a';
+
+    // Верхняя каменная кромка
+    ctx.fillStyle = p.type === 'plat' ? '#4a5268' : '#2d3242';
+    ctx.fillRect(p.x, p.y, p.w, 6);
+
+    ctx.strokeStyle = p.type === 'plat' ? '#646e8a' : '#353a4d';
     ctx.lineWidth = 2;
     ctx.strokeRect(p.x, p.y, p.w, p.h);
   });
 
-  // 5. Враги
+  // 6. Отрисовка врагов (Силуэты, броня, оружие, статус оглушения)
   enemies.forEach(e => {
     ctx.save();
-    // Телеграф замаха перед атакой!
     if (e.state === 'windup') {
-      ctx.fillStyle = 'rgba(255, 190, 66, 0.35)';
+      ctx.strokeStyle = '#ffbe42';
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(e.x + e.w / 2, e.y + e.h / 2, e.w, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.arc(e.x + e.w / 2, e.y - 12, 8, 0, Math.PI * 2);
+      ctx.stroke();
     }
+    if (e.state === 'stunned') {
+      ctx.fillStyle = '#6ab0e8';
+      ctx.font = '900 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('ОГЛУШЁН', e.x + e.w / 2, e.y - 16);
+    }
+
+    // Тело монстра
     ctx.fillStyle = e.flashTimer > 0
       ? '#ffffff'
-      : (e.type === 'warden' ? '#6e222e' : (e.type === 'wraith' ? '#4a6b82' : '#4a3b4e'));
-    ctx.fillRect(e.x, e.y, e.w, e.h);
+      : (e.type === 'warden' ? '#5e1d27' : (e.type === 'wraith' ? '#36566e' : '#3d3347'));
+    ctx.fillRect(e.x, e.y + 8, e.w, e.h - 8);
 
-    // Горящий глаз врага
-    ctx.fillStyle = e.state === 'windup' ? '#ffbe42' : '#ff334b';
-    const eyeX = e.facing === 1 ? e.x + e.w - 8 : e.x + 4;
-    ctx.fillRect(eyeX, e.y + 10, 5, 5);
+    // Голова / рогатый шлем
+    ctx.fillStyle = e.flashTimer > 0 ? '#ffffff' : '#26222e';
+    ctx.fillRect(e.x + 4, e.y, e.w - 8, 14);
 
-    // Полоска HP над врагом
+    // Светящийся глаз
+    ctx.fillStyle = e.state === 'windup' ? '#ffbe42' : (e.state === 'stunned' ? '#6ab0e8' : '#ff2a44');
+    const eyeX = e.facing === 1 ? e.x + e.w - 9 : e.x + 4;
+    ctx.fillRect(eyeX, e.y + 5, 5, 4);
+
+    // Полоска здоровья
     if (e.hp < e.maxHp) {
-      ctx.fillStyle = '#1a1416';
-      ctx.fillRect(e.x - 4, e.y - 10, e.w + 8, 5);
-      ctx.fillStyle = '#d93848';
-      ctx.fillRect(e.x - 4, e.y - 10, (e.w + 8) * (e.hp / e.maxHp), 5);
+      ctx.fillStyle = '#181214';
+      ctx.fillRect(e.x - 4, e.y - 9, e.w + 8, 4);
+      ctx.fillStyle = '#e0384b';
+      ctx.fillRect(e.x - 4, e.y - 9, (e.w + 8) * (e.hp / e.maxHp), 4);
     }
     ctx.restore();
   });
 
-  // 6. Развевающийся шарф и сам Пепельный Страж
-  ctx.strokeStyle = '#b82838';
-  ctx.lineWidth = 7;
+  // 7. Отрисовка Пепельного Стража (Плащ, доспех, шлем, клинок, щит)
+  ctx.strokeStyle = '#a82030';
+  ctx.lineWidth = 6;
   ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   ctx.beginPath();
   player.scarf.forEach((n, idx) => {
     if (idx === 0) ctx.moveTo(n.x, n.y);
@@ -1216,25 +1336,55 @@ function render() {
   ctx.stroke();
 
   ctx.save();
-  if (player.invuln > 0 && Math.floor(performance.now() / 45) % 2 === 0) {
-    ctx.globalAlpha = 0.45;
-  }
-  // Плащ и броня героя
-  ctx.fillStyle = player.dashTimer > 0 ? '#f0dbb0' : '#d8d4cc';
-  ctx.fillRect(player.x, player.y, player.w, player.h);
-  // Визор шлема
+  if (player.invuln > 0 && Math.floor(now / 45) % 2 === 0) ctx.globalAlpha = 0.45;
+
+  const bob = player.grounded && Math.abs(player.vx) > 20 ? Math.sin(player.animTime * 18) * 2.5 : 0;
+
+  // Ноги
+  ctx.fillStyle = '#252834';
+  ctx.fillRect(player.x + 4, player.y + 30, 7, 16);
+  ctx.fillRect(player.x + 15, player.y + 30, 7, 16);
+
+  // Кираса и наплечники
+  ctx.fillStyle = player.dashTimer > 0 ? '#f0dbb0' : '#7b8296';
+  ctx.fillRect(player.x + 2, player.y + 13 + bob, player.w - 4, 20);
+
+  // Рыцарский шлем
+  ctx.fillStyle = '#9aa2b8';
+  ctx.fillRect(player.x + 4, player.y + bob, player.w - 8, 14);
+
+  // Горящий визор
   ctx.fillStyle = '#00f3ff';
-  const visorX = player.facing === 1 ? player.x + player.w - 9 : player.x + 2;
-  ctx.fillRect(visorX, player.y + 9, 7, 4);
+  const visorX = player.facing === 1 ? player.x + player.w - 10 : player.x + 4;
+  ctx.fillRect(visorX, player.y + 5 + bob, 6, 3);
+
+  // Клинок в руке
+  ctx.strokeStyle = '#dce3f2';
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  const handX = player.x + player.w / 2 + player.facing * 8;
+  const handY = player.y + 22 + bob;
+  ctx.moveTo(handX, handY);
+  ctx.lineTo(handX + player.facing * 22, handY - 12);
+  ctx.stroke();
+
+  // Энергетический щит при парировании
+  if (player.parryWindow > 0) {
+    ctx.strokeStyle = '#6ab0e8';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(player.x + player.w / 2, player.y + player.h / 2, 32, -Math.PI * 0.45, Math.PI * 0.45, player.facing < 0);
+    ctx.stroke();
+  }
   ctx.restore();
 
-  // 7. Дуги рассечения мечом (Slash Trails)
+  // 8. Дуги рассечения мечом
   slashArcs.forEach(s => {
     ctx.save();
     ctx.translate(s.x, s.y);
     ctx.scale(s.dir, 1);
     const alpha = s.life / s.maxLife;
-    ctx.strokeStyle = s.step === 3 ? `rgba(255, 190, 66, ${alpha})` : `rgba(240, 245, 255, ${alpha})`;
+    ctx.strokeStyle = s.step === 3 ? `rgba(255, 190, 66, ${alpha})` : `rgba(235, 245, 255, ${alpha})`;
     ctx.lineWidth = s.step === 3 ? 14 : 9;
     ctx.beginPath();
     if (s.step === 2) {
@@ -1246,7 +1396,7 @@ function render() {
     ctx.restore();
   });
 
-  // 8. Частицы и цифры урона
+  // 9. Частицы и цифры урона
   particles.forEach(pt => {
     ctx.fillStyle = pt.color;
     ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
@@ -1255,7 +1405,7 @@ function render() {
   ctx.globalAlpha = 1;
 
   floatTexts.forEach(ft => {
-    ctx.font = ft.big ? '900 18px sans-serif' : '700 14px sans-serif';
+    ctx.font = ft.big ? '900 17px sans-serif' : '700 13px sans-serif';
     ctx.fillStyle = ft.color;
     ctx.textAlign = 'center';
     ctx.fillText(ft.text, ft.x, ft.y);
@@ -1264,7 +1414,6 @@ function render() {
   ctx.restore();
 }
 
-// Старт игры
 generateRoom(1);
 let prev = performance.now();
 function loop(now) {
