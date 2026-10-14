@@ -38,7 +38,7 @@ jobs:
           npx cap init "Neon Core" "com.arseniy.neoncore" --web-dir www
           npx cap add android
 
-          sed -i 's/android:configChanges="/android:screenOrientation="portrait" android:configChanges="/g' android/app/src/main/AndroidManifest.xml
+          sed -i 's/android:configChanges="/android:screenOrientation="sensorLandscape" android:configChanges="/g' android/app/src/main/AndroidManifest.xml
 
       - name: 5. Build Debug APK via Gradle
         working-directory: ./android
