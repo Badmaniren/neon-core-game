@@ -30,7 +30,8 @@ jobs:
       - name: 4. Generate Capacitor Android Project
         run: |
           mkdir -p www
-          cp index.html www/index.html
+                    mkdir -p www
+          cp -r index.html src www/
 
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
