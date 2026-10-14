@@ -1,4 +1,4 @@
-// src/world.js — Звук, генерация мира, физические цепи, люстры, бочки, лут и Боссы
+// src/world.js — Звук, генератор мира (без перекрытия Алтаря!), расчленёнка, выбитое оружие и цепи
 
 class AudioEngine {
   constructor() { this.ctx = null; }
@@ -10,32 +10,44 @@ class AudioEngine {
     this.init();
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime((step === 3 ? 160 : (step === 2 ? 310 : 240)) * pitchMod, now);
-    osc.frequency.exponentialRampToValueAtTime(50, now + 0.13);
-    gain.gain.setValueAtTime(0.18, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime((step === 3 ? 140 : (step === 2 ? 260 : 210)) * pitchMod, now);
+    osc.frequency.exponentialRampToValueAtTime(42, now + 0.14);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
     osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(now); osc.stop(now + 0.14);
+    osc.start(now); osc.stop(now + 0.15);
   }
-  hit(isCrit = false) {
+  goreHit(isHeavy = false) {
     this.init();
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
-    osc.type = isCrit ? 'square' : 'triangle';
-    osc.frequency.setValueAtTime(isCrit ? 150 : 110, now);
-    osc.frequency.exponentialRampToValueAtTime(32, now + 0.16);
-    gain.gain.setValueAtTime(isCrit ? 0.32 : 0.22, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+    osc.type = isHeavy ? 'sawtooth' : 'square';
+    osc.frequency.setValueAtTime(isHeavy ? 95 : 145, now);
+    osc.frequency.exponentialRampToValueAtTime(28, now + 0.18);
+    gain.gain.setValueAtTime(isHeavy ? 0.36 : 0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
     osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(now); osc.stop(now + 0.17);
+    osc.start(now); osc.stop(now + 0.19);
+  }
+  boneSnap() {
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.09);
+    gain.gain.setValueAtTime(0.28, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(now); osc.stop(now + 0.1);
   }
   woodBreak() {
     this.init();
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
     osc.type = 'square';
-    osc.frequency.setValueAtTime(190, now);
+    osc.frequency.setValueAtTime(180, now);
     osc.frequency.exponentialRampToValueAtTime(45, now + 0.12);
     gain.gain.setValueAtTime(0.2, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
@@ -47,8 +59,8 @@ class AudioEngine {
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(1200 + Math.random() * 400, now);
-    osc.frequency.exponentialRampToValueAtTime(600, now + 0.06);
+    osc.frequency.setValueAtTime(1350 + Math.random() * 350, now);
+    osc.frequency.exponentialRampToValueAtTime(650, now + 0.06);
     gain.gain.setValueAtTime(0.06, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
     osc.connect(gain); gain.connect(this.ctx.destination);
@@ -96,12 +108,12 @@ class AudioEngine {
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(95 + Math.random() * 25, now);
-    osc.frequency.exponentialRampToValueAtTime(35, now + 0.04);
-    gain.gain.setValueAtTime(0.05, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+    osc.frequency.setValueAtTime(90 + Math.random() * 25, now);
+    osc.frequency.exponentialRampToValueAtTime(32, now + 0.045);
+    gain.gain.setValueAtTime(0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
     osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(now); osc.stop(now + 0.045);
+    osc.start(now); osc.stop(now + 0.05);
   }
   dash() {
     this.init();
@@ -118,41 +130,39 @@ class AudioEngine {
 }
 window.sfx = new AudioEngine();
 
-// БАЗА РЕЛИКВИЙ И КЛАССОВ ОРУЖИЯ
 window.RELIC_POOL = [
-  { id: 'daggers', name: '⚔️ Клинки Ворона', desc: 'ОРУЖИЕ: Сверхбыстрые удары, 0 потери баланса при промахе, +15% крит.', apply: (p) => { p.weaponType = 'daggers'; p.atkSpeedMult *= 0.65; p.critChance += 0.15; p.swordColor = '#a8e6ff'; } },
-  { id: 'hammer', name: '🔨 Молот Титана', desc: 'ОРУЖИЕ: Урон +55%, пробивает броню и оглушает, но тяжёлый вес (следи за балансом!).', apply: (p) => { p.weaponType = 'hammer'; p.dmg = Math.round(p.dmg * 1.55); p.rangeBonus += 20; p.atkSpeedMult *= 1.2; p.swordColor = '#ff9d2e'; } },
-  { id: 'shock', name: '⚡ Грозовой пепел', desc: 'Финальный удар комбо и Парирование бьют ветвящейся Цепной Молнией.', apply: (p) => { p.chainLightning = true; p.swordColor = '#00f3ff'; } },
-  { id: 'vamp', name: '🩸 Окровавленный клык', desc: 'Багровое лезвие: исцеляет +7 HP за каждого убитого врага.', apply: (p) => { p.vampOnKill += 7; p.swordColor = '#ff2a4b'; } },
-  { id: 'crit', name: '✨ Обсидиановая грань', desc: '+25% к шансу критического удара (x1.85 урона).', apply: (p) => { p.critChance += 0.25; p.swordColor = '#ffbe42'; } },
-  { id: 'poise', name: '🛡️ Корни Скалы', desc: 'Стальная стойка: ты больше НЕ теряешь равновесие при промахе тяжёлым ударом +30 Max HP.', apply: (p) => { p.noOverswing = true; p.maxHp += 30; p.hp = Math.min(p.maxHp, p.hp + 30); } },
-  { id: 'swift', name: '💨 Ртутная поступь', desc: 'Скорость бега +22%, перезарядка рывка быстрее на 30%.', apply: (p) => { p.moveSpeed *= 1.22; p.dashCdMax *= 0.7; } }
+  { id: 'daggers', name: '⚔️ Клинки Ворона', desc: 'ПАРНЫЕ КИНЖАЛЫ: Сверхбыстрые порезы двумя руками, вскрывают живот (кишки и кровотечение), 0 потери баланса.', apply: (p) => { p.weaponType = 'daggers'; p.atkSpeedMult *= 0.62; p.critChance += 0.15; p.swordColor = '#a8e6ff'; } },
+  { id: 'hammer', name: '🔨 Молот Титана', desc: 'ДВУРУЧНЫЙ МОЛОТ: Дробит кости ног (враги ползают без ног!), выбивает оружие из рук и швыряет тела через зал.', apply: (p) => { p.weaponType = 'hammer'; p.dmg = Math.round(p.dmg * 1.5); p.rangeBonus += 22; p.atkSpeedMult *= 1.18; p.swordColor = '#ff9d2e'; } },
+  { id: 'cleaver', name: '🗡️ Палаческий Клеймор', desc: 'МЕЧ ПАЛАЧА: Разрубает врагов ПОПОЛАМ при добивании и отсекает головы. Длина лезвия +18px.', apply: (p) => { p.weaponType = 'greatsword'; p.dmg = Math.round(p.dmg * 1.3); p.rangeBonus += 18; p.swordColor = '#f5efe6'; } },
+  { id: 'shock', name: '⚡ Грозовой пепел', desc: 'Каждый 3-й удар и Парирование бьют ветвящейся Цепной Молнией.', apply: (p) => { p.chainLightning = true; p.swordColor = '#00f3ff'; } },
+  { id: 'vamp', name: '🩸 Окровавленный клык', desc: 'Вампиризм: +8 HP за каждого расчленённого или убитого врага.', apply: (p) => { p.vampOnKill += 8; p.swordColor = '#ff2a4b'; } },
+  { id: 'poise', name: '🛡️ Корни Скалы', desc: 'Железный баланс: ты не спотыкаешься при промахе тяжёлым оружием +35 Max HP.', apply: (p) => { p.noOverswing = true; p.maxHp += 35; p.hp = Math.min(p.maxHp, p.hp + 35); } }
 ];
 
-// ГЛОБАЛЬНОЕ СОСТОЯНИЕ МИРА
 window.WORLD = {
-  FLOOR_Y: 430,
+  FLOOR_Y: 435,
   roomIndex: 1,
   roomWidth: 2200,
   platforms: [],
   enemies: [],
+  corpses: [],        // Отрубленные половины тел, головы и конечности с физикой!
+  droppedWeapons: [], // Выбитое из рук врагов оружие, за которым они ползут!
   particles: [],
   bloodStains: [],
   lightningBolts: [],
   torches: [],
-  slashArcs: [],
   floatTexts: [],
-  chains: [],       // Физические свисающие цепи (Verlet)
-  chandeliers: [],  // Подвесные огненные люстры, которые можно обрушить на врагов
-  barrels: [],      // Разрушаемые бочки с лутом
-  lootOrbs: [],     // Выпадающие сферы HP и Пепла
-  shockwaves: [],   // Наземные волны от ударов Босса
+  chains: [],
+  chandeliers: [],
+  barrels: [],
+  lootOrbs: [],
+  shockwaves: [],
   shrine: null,
   portal: null,
   bgPillars: []
 };
 
-window.spawnParticles = function(x, y, color, count = 12, speed = 220, gravity = 520) {
+window.spawnParticles = function(x, y, color, count = 12, speed = 220, gravity = 540) {
   for (let i = 0; i < count; i++) {
     const ang = Math.random() * Math.PI * 2;
     const spd = (0.3 + Math.random() * 0.85) * speed;
@@ -162,14 +172,14 @@ window.spawnParticles = function(x, y, color, count = 12, speed = 220, gravity =
       vy: Math.sin(ang) * spd - 65,
       size: 3 + Math.floor(Math.random() * 4),
       color, gravity,
-      life: 0.32 + Math.random() * 0.35,
-      maxLife: 0.67
+      life: 0.35 + Math.random() * 0.4,
+      maxLife: 0.75
     });
   }
 };
 
 window.addFloatText = function(x, y, text, color = '#f5efe6', big = false) {
-  WORLD.floatTexts.push({ x, y, text, color, big, vy: -85, life: 0.85 });
+  WORLD.floatTexts.push({ x, y, text, color, big, vy: -80, life: 0.9 });
 };
 
 window.spawnLightningBolt = function(x1, y1, x2, y2) {
@@ -198,25 +208,24 @@ window.hasLineOfSight = function(x1, y1, x2, y2) {
   return true;
 };
 
-// Создание физической цепи под потолком
 function createHangingChain(anchorX, anchorY, links = 9) {
   const nodes = [];
   for (let i = 0; i < links; i++) {
-    nodes.push({ x: anchorX, y: anchorY + i * 11, vx: 0 });
+    nodes.push({ x: anchorX, y: anchorY + i * 12, vx: 0 });
   }
   WORLD.chains.push({ anchorX, anchorY, nodes });
 }
 
-// Генератор зала (Обычный зал ИЛИ Арена с Боссом каждые 3 этажа)
 window.generateRoom = function(num, player) {
   const W = WORLD;
   W.roomIndex = num;
   W.platforms = [];
   W.enemies = [];
+  W.corpses = [];
+  W.droppedWeapons = [];
   W.particles = [];
   W.bloodStains = [];
   W.lightningBolts = [];
-  W.slashArcs = [];
   W.bgPillars = [];
   W.torches = [];
   W.chains = [];
@@ -226,79 +235,70 @@ window.generateRoom = function(num, player) {
   W.shockwaves = [];
 
   const isBossRoom = (num % 3 === 0);
-  W.roomWidth = isBossRoom ? 1250 : (1900 + num * 170);
+  W.roomWidth = isBossRoom ? 1300 : (1950 + num * 180);
   const fy = W.FLOOR_Y;
+
+  // Заранее резервируем чистую зону под Алтарь Предков в центре зала!
+  const shrineX = Math.floor(W.roomWidth * 0.5);
+  W.shrine = { x: shrineX, y: fy, used: false };
+  W.portal = { x: W.roomWidth - 130, y: fy };
 
   // Пол и боковые стены
   W.platforms.push({ x: -160, y: fy, w: W.roomWidth + 320, h: 240, type: 'floor' });
   W.platforms.push({ x: -128, y: -420, w: 128, h: 1050, type: 'wall' });
   W.platforms.push({ x: W.roomWidth, y: -420, w: 128, h: 1050, type: 'wall' });
 
-  for (let x = 140; x < W.roomWidth - 100; x += 220) {
-    W.bgPillars.push({ x, w: 56, h: 520 });
-    W.torches.push({ x: x + 28, y: fy - 140, flicker: Math.random() * 10 });
-    createHangingChain(x + 95, 20, 8 + (x % 5));
+  for (let x = 140; x < W.roomWidth - 120; x += 230) {
+    W.bgPillars.push({ x, w: 58, h: 520 });
+    W.torches.push({ x: x + 29, y: fy - 145, flicker: Math.random() * 10 });
+    createHangingChain(x + 105, 10, 8 + (x % 4));
   }
 
   if (isBossRoom) {
-    // АРЕНА БОССА (Уступы по бокам для уворота и две подвесные люстры!)
-    W.platforms.push({ x: 180, y: fy - 115, w: 192, h: 22, type: 'plat' });
-    W.platforms.push({ x: W.roomWidth - 372, y: fy - 115, w: 192, h: 22, type: 'plat' });
-    W.chandeliers.push({ x: 460, y: fy - 240, anchorY: 10, vy: 0, state: 'hanging' });
-    W.chandeliers.push({ x: W.roomWidth - 460, y: fy - 240, anchorY: 10, vy: 0, state: 'hanging' });
-    W.barrels.push({ x: 240, y: fy - 28, w: 24, h: 28, hp: 1 });
-    W.barrels.push({ x: W.roomWidth - 260, y: fy - 28, w: 24, h: 28, hp: 1 });
+    W.platforms.push({ x: 180, y: fy - 120, w: 192, h: 22, type: 'plat' });
+    W.platforms.push({ x: W.roomWidth - 372, y: fy - 120, w: 192, h: 22, type: 'plat' });
+    W.chandeliers.push({ x: 450, y: fy - 245, anchorY: 10, vy: 0, state: 'hanging' });
+    W.chandeliers.push({ x: W.roomWidth - 450, y: fy - 245, anchorY: 10, vy: 0, state: 'hanging' });
+    W.barrels.push({ x: 240, y: fy - 32, w: 26, h: 32, hp: 1 });
+    W.barrels.push({ x: W.roomWidth - 260, y: fy - 32, w: 26, h: 32, hp: 1 });
 
-    // Спавн БОССА — ПОВЕЛИТЕЛЬ ПЕПЛА
-    const bossHp = 420 + num * 140;
-    W.enemies.push({
-      type: 'boss',
-      name: 'ИНКВИЗИТОР ПЕПЛА',
-      x: W.roomWidth - 280, y: fy - 76, w: 52, h: 74,
-      vx: 0, vy: 0,
-      hp: bossHp, maxHp: bossHp,
-      dmg: 28 + num * 4,
-      facing: -1,
-      state: 'chase',
-      timer: 0,
-      atkCooldown: 1.0,
-      flashTimer: 0,
-      animOffset: 0
-    });
+    const bossHp = 450 + num * 140;
+    W.enemies.push(createEnemyObj('boss', W.roomWidth - 280, fy, num, bossHp));
   } else {
-    // ОБЫЧНЫЙ ЗАЛ С ПАРКУРОМ, УСТУПАМИ ДЛЯ LEDGE-GRAB И ЛОВУШКАМИ
     let cursorX = 300;
-    while (cursorX < W.roomWidth - 400) {
+    while (cursorX < W.roomWidth - 380) {
+      // ГАРАНТИЯ ЧИСТОГО АЛТАРЯ: если секция попадает на зону Алтаря (shrineX ± 130), пропускаем стены!
+      if (Math.abs(cursorX + 100 - shrineX) < 150) {
+        W.platforms.push({ x: shrineX - 96, y: fy - 145, w: 192, h: 22, type: 'plat' });
+        cursorX = shrineX + 150;
+        continue;
+      }
+
       const pat = Math.floor(Math.random() * 3);
       if (pat === 0) {
-        W.platforms.push({ x: cursorX, y: fy - 112, w: 192, h: 22, type: 'plat' });
-        W.platforms.push({ x: cursorX + 96, y: fy - 220, w: 160, h: 22, type: 'plat' });
-        // Подвесная люстра над врагами!
-        W.chandeliers.push({ x: cursorX + 95, y: fy - 265, anchorY: 10, vy: 0, state: 'hanging' });
-        spawnEnemyAt(cursorX + 80, fy - 112, num);
-        W.barrels.push({ x: cursorX + 20, y: fy - 28, w: 24, h: 28, hp: 1 });
-        cursorX += 340;
+        W.platforms.push({ x: cursorX, y: fy - 115, w: 192, h: 22, type: 'plat' });
+        W.platforms.push({ x: cursorX + 96, y: fy - 225, w: 160, h: 22, type: 'plat' });
+        W.chandeliers.push({ x: cursorX + 95, y: fy - 270, anchorY: 10, vy: 0, state: 'hanging' });
+        W.enemies.push(createEnemyObj( randomType(), cursorX + 80, fy - 115, num ));
+        W.barrels.push({ x: cursorX + 20, y: fy - 32, w: 26, h: 32, hp: 1 });
+        cursorX += 350;
       } else if (pat === 1) {
-        // Высокая колонна для Wall-Jump и Ledge-Grab (хвата руками за край!)
-        W.platforms.push({ x: cursorX + 32, y: fy - 210, w: 48, h: 210, type: 'wall' });
-        W.platforms.push({ x: cursorX + 144, y: fy - 185, w: 176, h: 22, type: 'plat' });
-        spawnEnemyAt(cursorX + 200, fy - 185, num);
-        W.barrels.push({ x: cursorX + 170, y: fy - 185 - 28, w: 24, h: 28, hp: 1 });
+        // Колонна для Wall-Jump, Сальто от стены и Ledge-Grab!
+        W.platforms.push({ x: cursorX + 32, y: fy - 200, w: 48, h: 200, type: 'wall' });
+        W.platforms.push({ x: cursorX + 144, y: fy - 180, w: 176, h: 22, type: 'plat' });
+        W.enemies.push(createEnemyObj( randomType(), cursorX + 205, fy - 180, num ));
+        W.barrels.push({ x: cursorX + 165, y: fy - 180 - 32, w: 26, h: 32, hp: 1 });
         cursorX += 380;
       } else {
         W.platforms.push({ x: cursorX, y: fy - 130, w: 256, h: 22, type: 'plat' });
-        W.chandeliers.push({ x: cursorX + 128, y: fy - 255, anchorY: 10, vy: 0, state: 'hanging' });
-        spawnEnemyAt(cursorX + 110, fy - 130, num);
-        spawnEnemyAt(cursorX + 160, fy, num);
-        W.barrels.push({ x: cursorX + 40, y: fy - 130 - 28, w: 24, h: 28, hp: 1 });
+        W.chandeliers.push({ x: cursorX + 128, y: fy - 265, anchorY: 10, vy: 0, state: 'hanging' });
+        W.enemies.push(createEnemyObj( randomType(), cursorX + 110, fy - 130, num ));
+        W.enemies.push(createEnemyObj( randomType(), cursorX + 160, fy, num ));
         cursorX += 360;
       }
-      if (Math.random() < 0.85) spawnEnemyAt(cursorX - 110, fy, num);
+      if (Math.random() < 0.85) W.enemies.push(createEnemyObj( randomType(), cursorX - 110, fy, num ));
     }
   }
-
-  W.shrine = { x: Math.floor(W.roomWidth * 0.48), y: fy, used: false };
-  W.portal = { x: W.roomWidth - 120, y: fy };
 
   if (player) {
     player.x = 110;
@@ -309,31 +309,44 @@ window.generateRoom = function(num, player) {
     player.ledgeGrab = null;
     player.offBalanceTimer = 0;
     player.knockdown = false;
+    player.flipAngle = 0;
     if (window.resetScarf) window.resetScarf();
   }
 };
 
-function spawnEnemyAt(x, groundY, level) {
-  const types = ['stalker', 'warden', 'wraith'];
-  const type = types[Math.floor(Math.random() * types.length)];
-  const isWarden = type === 'warden';
+function randomType() {
+  const r = Math.random();
+  return r < 0.45 ? 'stalker' : (r < 0.8 ? 'warden' : 'wraith');
+}
+
+function createEnemyObj(type, x, groundY, level, customHp = null) {
+  const isBoss = type === 'boss';
+  const isWarden = type === 'warden' || isBoss;
   const isWraith = type === 'wraith';
 
-  const w = isWarden ? 36 : 30;
-  const h = isWarden ? 52 : (isWraith ? 42 : 44);
-  const maxHp = Math.round((isWarden ? 110 : (isWraith ? 60 : 72)) * (1 + (level - 1) * 0.25));
+  const w = isBoss ? 56 : (isWarden ? 40 : 32);
+  const h = isBoss ? 82 : (isWarden ? 62 : 54);
+  const maxHp = customHp || Math.round((isWarden ? 115 : (isWraith ? 65 : 75)) * (1 + (level - 1) * 0.25));
 
-  WORLD.enemies.push({
+  return {
     type,
     x, y: groundY - h - 2, w, h,
     vx: 0, vy: 0,
     hp: maxHp, maxHp,
-    dmg: Math.round((isWarden ? 24 : 15) * (1 + (level - 1) * 0.18)),
+    dmg: Math.round((isBoss ? 32 : (isWarden ? 24 : 15)) * (1 + (level - 1) * 0.18)),
     facing: -1,
     state: 'chase',
     timer: 0,
     atkCooldown: 0.4,
+    atkDuration: 0.35,
     flashTimer: 0,
-    animOffset: Math.random() * 10
-  });
+    stepPhase: Math.random() * 6,
+    // АНАТОМИЧЕСКИЕ СОСТОЯНИЯ И РАНЫ ВРАГА:
+    wounds: [],        // Массив ран на теле [{ rx, ry, type: 'cut'|'gut'|'crush' }]
+    gutsSpilled: false,// Вспорот живот — свисают физические петли кишок!
+    gutNodes: [],      // Точки верёвки кишок
+    legBroken: false,  // Перебита нога молотом -> ползёт по полу!
+    disarmed: false,   // Оружие выбито из рук -> пытается добежать/доползти до меча!
+    bleedTimer: 0
+  };
 }
