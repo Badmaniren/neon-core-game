@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>ASHEN BLADE — v0.3</title>
+<title>ASHEN BLADE — v0.3 Pixel Forge</title>
 <style>
   * {
     box-sizing: border-box;
@@ -17,7 +17,7 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #090a10;
+    background: #07080c;
     font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
     touch-action: none;
     color: #e6e1d6;
@@ -49,42 +49,59 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
-    background: rgba(12, 13, 18, 0.84);
-    border: 1px solid rgba(196, 164, 108, 0.4);
+    background: rgba(10, 11, 16, 0.88);
+    border: 1px solid rgba(196, 164, 108, 0.45);
     padding: 8px 12px;
-    border-radius: 8px;
-    min-width: 220px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    border-radius: 6px;
+    min-width: 230px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.7);
   }
   .hp-bar-wrap {
     width: 100%;
-    height: 11px;
-    background: #1f1417;
+    height: 12px;
+    background: #1a1013;
     border: 1px solid #5a383e;
-    border-radius: 3px;
+    border-radius: 2px;
     overflow: hidden;
     position: relative;
   }
   #hp-Lag {
     position: absolute;
     top: 0; left: 0; bottom: 0;
-    background: #e09f24;
+    background: #e8a828;
     width: 100%;
     transition: width 0.4s ease-out;
   }
   #hp-Fill {
     position: absolute;
     top: 0; left: 0; bottom: 0;
-    background: linear-gradient(90deg, #8f1d2c, #e0384b);
+    background: linear-gradient(90deg, #8a1826, #e63246);
     width: 100%;
   }
   .meta-row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-size: 11px;
     letter-spacing: 0.7px;
     color: #c4a46c;
-    font-weight: 700;
+    font-weight: 800;
+  }
+  .combo-dots {
+    display: flex;
+    gap: 4px;
+  }
+  .c-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: #282b36;
+    border: 1px solid #555b70;
+  }
+  .c-dot.active {
+    background: #ffbe42;
+    border-color: #fff;
+    box-shadow: 0 0 6px #ffbe42;
   }
   .relics-bar {
     display: flex;
@@ -95,22 +112,22 @@
   .relic-tag {
     font-size: 10px;
     padding: 2px 6px;
-    border-radius: 4px;
+    border-radius: 3px;
     background: rgba(196, 164, 108, 0.16);
     border: 1px solid rgba(196, 164, 108, 0.45);
     color: #f0dbb0;
   }
 
   .room-badge {
-    background: rgba(12, 13, 18, 0.84);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(10, 11, 16, 0.88);
+    border: 1px solid rgba(196, 164, 108, 0.3);
     padding: 8px 14px;
-    border-radius: 8px;
+    border-radius: 6px;
     text-align: right;
   }
   .room-title {
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 900;
     letter-spacing: 1.4px;
     color: #c4a46c;
     text-transform: uppercase;
@@ -121,7 +138,7 @@
     margin-top: 2px;
   }
 
-  /* ТАЧ-КОНТРОЛЛЕР */
+  /* ТАЧ-УПРАВЛЕНИЕ */
   .controls-row {
     display: flex;
     justify-content: space-between;
@@ -141,7 +158,7 @@
     transform: translate(-50%, -50%);
     border-radius: 50%;
     border: 2px solid rgba(196, 164, 108, 0.38);
-    background: radial-gradient(circle, rgba(196, 164, 108, 0.1) 0%, rgba(10, 10, 14, 0.5) 100%);
+    background: radial-gradient(circle, rgba(196, 164, 108, 0.1) 0%, rgba(10, 10, 14, 0.55) 100%);
   }
   #stick-knob {
     position: absolute;
@@ -155,7 +172,7 @@
 
   .action-buttons {
     position: relative;
-    width: 230px;
+    width: 235px;
     height: 165px;
     pointer-events: auto;
   }
@@ -170,16 +187,24 @@
     letter-spacing: 0.7px;
     color: #f5efe6;
     border: 2px solid rgba(255, 255, 255, 0.28);
-    transition: transform 0.05s;
+    transition: transform 0.05s, opacity 0.1s;
+    overflow: hidden;
   }
   .act-btn:active, .act-btn.pressed {
     transform: scale(0.88);
-    filter: brightness(1.3);
+    filter: brightness(1.25);
+  }
+  .cd-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0, 0, 0, 0.68);
+    height: 0%;
+    pointer-events: none;
   }
   #btn-atk {
-    width: 82px; height: 82px;
+    width: 84px; height: 84px;
     right: 68px; bottom: 6px;
-    background: radial-gradient(circle, rgba(196, 52, 68, 0.78), rgba(80, 18, 28, 0.9));
+    background: radial-gradient(circle, rgba(196, 52, 68, 0.82), rgba(75, 16, 25, 0.92));
     border-color: #e05364;
     box-shadow: 0 0 20px rgba(224, 83, 100, 0.45);
     font-size: 13px;
@@ -187,40 +212,40 @@
   #btn-jmp {
     width: 72px; height: 72px;
     right: 0px; bottom: 58px;
-    background: radial-gradient(circle, rgba(72, 130, 180, 0.72), rgba(24, 48, 72, 0.9));
+    background: radial-gradient(circle, rgba(72, 130, 180, 0.76), rgba(24, 48, 72, 0.92));
     border-color: #6ab0e8;
     font-size: 11px;
   }
   #btn-dash {
     width: 64px; height: 64px;
-    right: 148px; bottom: 48px;
-    background: radial-gradient(circle, rgba(196, 164, 108, 0.72), rgba(64, 50, 28, 0.9));
+    right: 150px; bottom: 48px;
+    background: radial-gradient(circle, rgba(196, 164, 108, 0.76), rgba(64, 50, 28, 0.92));
     border-color: #d8b878;
     font-size: 11px;
   }
   #btn-parry {
     width: 60px; height: 60px;
-    right: 82px; bottom: 96px;
-    background: radial-gradient(circle, rgba(120, 140, 180, 0.75), rgba(35, 42, 60, 0.9));
+    right: 84px; bottom: 98px;
+    background: radial-gradient(circle, rgba(120, 140, 180, 0.78), rgba(35, 42, 60, 0.92));
     border-color: #9ab4e8;
     font-size: 10px;
   }
   #btn-use {
     width: 64px; height: 64px;
-    right: 12px; bottom: 130px;
-    background: radial-gradient(circle, rgba(90, 185, 130, 0.85), rgba(25, 65, 42, 0.95));
+    right: 12px; bottom: 132px;
+    background: radial-gradient(circle, rgba(90, 185, 130, 0.88), rgba(25, 65, 42, 0.95));
     border-color: #68e09c;
     font-size: 11px;
     display: none;
     box-shadow: 0 0 18px rgba(104, 224, 156, 0.6);
   }
 
-  /* МОДАЛКА ВЫБОРА РЕЛИКВИИ */
+  /* МОДАЛКА АЛТАРЯ */
   #relic-modal {
     position: absolute;
     inset: 0;
     z-index: 20;
-    background: rgba(8, 9, 12, 0.9);
+    background: rgba(6, 7, 10, 0.92);
     backdrop-filter: blur(8px);
     display: none;
     flex-direction: column;
@@ -250,9 +275,9 @@
   }
   .relic-card {
     flex: 1;
-    background: linear-gradient(180deg, #181a22 0%, #101218 100%);
-    border: 1px solid #c4a46c;
-    border-radius: 10px;
+    background: linear-gradient(180deg, #181a22 0%, #0f1117 100%);
+    border: 2px solid #c4a46c;
+    border-radius: 8px;
     padding: 14px;
     cursor: pointer;
     pointer-events: auto;
@@ -289,7 +314,12 @@
         <div id="hp-Fill"></div>
       </div>
       <div class="meta-row">
-        <span id="atk-txt">УРОН: 24</span>
+        <span id="atk-txt">УРОН: 25</span>
+        <div class="combo-dots" title="Серия ударов">
+          <div class="c-dot" id="cd-1"></div>
+          <div class="c-dot" id="cd-2"></div>
+          <div class="c-dot" id="cd-3"></div>
+        </div>
         <span id="souls-txt">ПЕПЕЛ: 0</span>
       </div>
       <div class="relics-bar" id="relics-list"></div>
@@ -309,23 +339,190 @@
 
     <div class="action-buttons">
       <div class="act-btn" id="btn-use">ВЗЯТЬ</div>
-      <div class="act-btn" id="btn-parry">ЩИТ</div>
-      <div class="act-btn" id="btn-dash">РЫВОК</div>
-      <div class="act-btn" id="btn-jmp">ПРЫЖОК</div>
-      <div class="act-btn" id="btn-atk">УДАР</div>
+      <div class="act-btn" id="btn-parry"><span>ЩИТ</span><div class="cd-overlay" id="cd-parry"></div></div>
+      <div class="act-btn" id="btn-dash"><span>РЫВОК</span><div class="cd-overlay" id="cd-dash"></div></div>
+      <div class="act-btn" id="btn-jmp"><span>ПРЫЖОК</span></div>
+      <div class="act-btn" id="btn-atk"><span>УДАР</span><div class="cd-overlay" id="cd-atk"></div></div>
     </div>
   </div>
 </div>
 
 <div id="relic-modal">
   <div class="modal-title">АЛТАРЬ ПРЕДКОВ</div>
-  <div class="modal-sub">Выбери один дар для своего клинка</div>
+  <div class="modal-sub">Выбери древнюю реликвию (меняет свойства и внешний вид клинка)</div>
   <div class="cards-row" id="cards-container"></div>
 </div>
 
 <script>
 // =====================================================
-// 1. АУДИО ДВИЖОК И ЭЛЕКТРИЧЕСКИЙ РАЗРЯД МОЛНИИ
+// 1. PIXEL FORGE ENGINE — КОМПИЛЯТОР ПИКСЕЛЬНЫХ СПРАЙТОВ И ТАЙЛОВ
+// =====================================================
+const PALETTE = {
+  '.': null,
+  'k': '#0a0b10', // тёмный контур
+  's': '#4a5162', // тёмная сталь
+  'm': '#7b849b', // средняя сталь
+  'l': '#bcc6de', // светлая сталь / блик
+  'w': '#ffffff', // чистый блик
+  'c': '#00f3ff', // голубой визор / дух
+  'b': '#3b688c', // призрачная ткань
+  'r': '#9e1e2e', // багровая ткань / кровь
+  'R': '#e6394e', // яркий багровый
+  'g': '#c4a46c', // старое золото / кость
+  'G': '#f2d899', // светлая кость / золото
+  'd': '#232630', // графитовая кожа/поддоспешник
+  'p': '#392836', // тёмная броня врагов
+  'o': '#ffae38', // огненный глаз
+};
+
+function compileSprite(grid) {
+  const h = grid.length;
+  const w = grid[0].length;
+  const off = document.createElement('canvas');
+  off.width = w;
+  off.height = h;
+  const octx = off.getContext('2d');
+  for (let y = 0; y < h; y++) {
+    const row = grid[y];
+    for (let x = 0; x < w; x++) {
+      const col = PALETTE[row[x]];
+      if (col) {
+        octx.fillStyle = col;
+        octx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  return off;
+}
+
+// Спрайты ПЕПЕЛЬНОГО РЫЦАРЯ (16x22) — Кадр 1 (Стойка/Шаг 1) и Кадр 2 (Шаг 2)
+const KNIGHT_IDLE = compileSprite([
+  "....kk....kk....",
+  "....kskkkkksk...",
+  "....ksmlllmsk...",
+  "....ksmmmccwk...",
+  "....ksmssssmk...",
+  "...kkrrrrrrrk...",
+  "..krrlmmmmmlrk..",
+  "..krsmlllllmsrk.",
+  "..k.ksmgggmsk...",
+  "....ksmdddmsk...",
+  "....kgggggggk...",
+  "....kdrkdkrdk...",
+  "....kdrk.krdk...",
+  "....ksmk.kmsk...",
+  "....ksmk.kmsk...",
+  "...kkllk.kllkk..",
+  "...kkkkk.kkkkk.."
+]);
+
+const KNIGHT_RUN = compileSprite([
+  "....kk....kk....",
+  "....kskkkkksk...",
+  "....ksmlllmsk...",
+  "....ksmmmccwk...",
+  "....ksmssssmk...",
+  "...kkrrrrrrrk...",
+  "..krrlmmmmmlrk..",
+  "..krsmlllllmsrk.",
+  "....ksmgggmsk...",
+  "....ksmdddmsk...",
+  "....kgggggggk...",
+  "...kdrk...krdk..",
+  "..kdrk.....krdk.",
+  "..ksmk.....kmsk.",
+  ".kkllk.....kllkk",
+  ".kkkkk.....kkkkk",
+  "................"
+]);
+
+// Спрайт СКЕЛЕТА-СТАЛКЕРА (15x21)
+const SPRITE_STALKER = compileSprite([
+  "....kkkkkkk....",
+  "...kGGGGGGGk...",
+  "..kGGGGGGGGGk..",
+  "..kGGkkGooGGk..",
+  "..kGGGGGGGGk...",
+  "...kkGkkkGkk...",
+  "....kGGGGk.....",
+  "..kkkGGGGkkk...",
+  ".kGGGkGGkGGGk..",
+  ".kG.kGGGGk.Gk..",
+  ".k..kGkkGk..k..",
+  "....kGGGGk.....",
+  "...kGGkkGGk....",
+  "...kGk..kGk....",
+  "...kGk..kGk....",
+  "..kGGk..kGGk...",
+  "..kkkk..kkkk..."
+]);
+
+// Спрайт БАГРОВОГО ПАЛАЧА (18x24 — тяжёлый бронированный громила)
+const SPRITE_WARDEN = compileSprite([
+  "..kk..........kk..",
+  ".kggk..kkkk..kggk.",
+  "..kggkkppppkkggk..",
+  "...kkppppppppkk...",
+  "...kpppkRRooRpk...",
+  "...kppppppppppk...",
+  "..kkrrrrrrrrrrkk..",
+  ".krrppppppppppprk.",
+  "krrpmmmppppmmmprrk",
+  "kr.kppppppppppk.rk",
+  "...kppggggggppk...",
+  "...kpppddddpppk...",
+  "...kppppppppppk...",
+  "...krrrrrrrrrrk...",
+  "...kpprk..krppk...",
+  "...kpppk..kpppk...",
+  "..kppppk..kppppk..",
+  "..kkkkkk..kkkkkk.."
+]);
+
+// Спрайт ПЕПЕЛЬНОГО ДУХА (15x20 — парящий призрак)
+const SPRITE_WRAITH = compileSprite([
+  "....kkkkkkk....",
+  "...kbbbbbbbk...",
+  "..kbbbbbbbbbk..",
+  "..kbbkkbccbbk..",
+  "..kbbbbbbbbbk..",
+  "..kbbbccccbbk..",
+  ".kbbbbbbbbbbbk.",
+  ".kbbkbbbbbkbbk.",
+  "kbbk.kbbbk.kbbk",
+  "kck..kbbbk..kck",
+  "kk...kbbbk...kk",
+  "....kbbbbbk....",
+  "....kbb.bbk....",
+  "...kbbk.kbbk...",
+  "...kbk...kbk...",
+  "...k.k...k.k..."
+]);
+
+// Процедурный генератор каменного тайла (32x32) для бесшовных стен и пола
+function createStonePattern(isPlat) {
+  const c = document.createElement('canvas');
+  c.width = 32; c.height = 32;
+  const g = c.getContext('2d');
+  g.fillStyle = isPlat ? '#2a2e3d' : '#161822';
+  g.fillRect(0, 0, 32, 32);
+  // Кирпичные швы
+  g.fillStyle = '#0c0d12';
+  g.fillRect(0, 15, 32, 2);
+  g.fillRect(15, 0, 2, 16);
+  g.fillRect(7, 16, 2, 16);
+  // Блики на камнях
+  g.fillStyle = isPlat ? '#464d66' : '#25293a';
+  g.fillRect(2, 2, 11, 2);
+  g.fillRect(18, 2, 11, 2);
+  g.fillRect(10, 18, 18, 2);
+  return c;
+}
+const STONE_TILE = createStonePattern(false);
+const PLAT_TILE = createStonePattern(true);
+
+// =====================================================
+// 2. АУДИО-СИНТЕЗАТОР (МЕТАЛЛ, МОЛНИИ, ПАРИРОВАНИЕ)
 // =====================================================
 class AudioEngine {
   constructor() { this.ctx = null; }
@@ -339,12 +536,12 @@ class AudioEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(step === 3 ? 170 : 270, now);
-    osc.frequency.exponentialRampToValueAtTime(55, now + 0.12);
-    gain.gain.setValueAtTime(0.16, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+    osc.frequency.setValueAtTime(step === 3 ? 170 : (step === 2 ? 320 : 250), now);
+    osc.frequency.exponentialRampToValueAtTime(55, now + 0.13);
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
     osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(now); osc.stop(now + 0.13);
+    osc.start(now); osc.stop(now + 0.14);
   }
   hit(isCrit = false) {
     this.init();
@@ -352,12 +549,25 @@ class AudioEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = isCrit ? 'square' : 'triangle';
-    osc.frequency.setValueAtTime(isCrit ? 140 : 110, now);
-    osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
-    gain.gain.setValueAtTime(isCrit ? 0.3 : 0.22, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+    osc.frequency.setValueAtTime(isCrit ? 155 : 115, now);
+    osc.frequency.exponentialRampToValueAtTime(35, now + 0.16);
+    gain.gain.setValueAtTime(isCrit ? 0.32 : 0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
     osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(now); osc.stop(now + 0.16);
+    osc.start(now); osc.stop(now + 0.17);
+  }
+  thunder() {
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(680, now);
+    osc.frequency.exponentialRampToValueAtTime(90, now + 0.22);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.23);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(now); osc.stop(now + 0.23);
   }
   parryClang() {
     this.init();
@@ -365,26 +575,13 @@ class AudioEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(950, now);
-    osc.frequency.exponentialRampToValueAtTime(1550, now + 0.08);
-    osc.frequency.exponentialRampToValueAtTime(450, now + 0.3);
-    gain.gain.setValueAtTime(0.32, now);
+    osc.frequency.setValueAtTime(960, now);
+    osc.frequency.exponentialRampToValueAtTime(1520, now + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(420, now + 0.3);
+    gain.gain.setValueAtTime(0.34, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
     osc.connect(gain); gain.connect(this.ctx.destination);
     osc.start(now); osc.stop(now + 0.32);
-  }
-  lightning() {
-    this.init();
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(800, now);
-    osc.frequency.exponentialRampToValueAtTime(120, now + 0.22);
-    gain.gain.setValueAtTime(0.28, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
-    osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(now); osc.stop(now + 0.24);
   }
   jump() {
     this.init();
@@ -393,7 +590,7 @@ class AudioEngine {
     const gain = this.ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(160, now);
-    osc.frequency.exponentialRampToValueAtTime(340, now + 0.09);
+    osc.frequency.exponentialRampToValueAtTime(350, now + 0.09);
     gain.gain.setValueAtTime(0.11, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
     osc.connect(gain); gain.connect(this.ctx.destination);
@@ -405,7 +602,7 @@ class AudioEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(240, now);
+    osc.frequency.setValueAtTime(250, now);
     osc.frequency.exponentialRampToValueAtTime(75, now + 0.13);
     gain.gain.setValueAtTime(0.15, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
@@ -416,19 +613,19 @@ class AudioEngine {
 const sfx = new AudioEngine();
 
 // =====================================================
-// 2. РЕЛИКВИИ РОГАЛИКА
+// 3. БАЗА РЕЛИКВИЙ (МЕНЯЮТ БОЁВКУ И ВНЕШНИЙ ВИД КЛИНКА)
 // =====================================================
 const RELIC_POOL = [
-  { id: 'vamp', name: 'Окровавленный клык', desc: '+5 HP за каждого убитого врага.', apply: (p) => { p.vampOnKill += 5; } },
-  { id: 'crit', name: 'Обсидиановая грань', desc: '+25% к шансу критического удара (x1.8 урона).', apply: (p) => { p.critChance += 0.25; } },
-  { id: 'heavy', name: 'Печать Палача', desc: 'Урон меча +30%, длина клинка +16px.', apply: (p) => { p.dmg = Math.round(p.dmg * 1.3); p.rangeBonus += 16; } },
-  { id: 'swift', name: 'Ртутная поступь', desc: 'Скорость бега +20%, откат рывка быстрее на 35%.', apply: (p) => { p.moveSpeed *= 1.2; p.dashCdMax *= 0.65; } },
-  { id: 'vital', name: 'Сердце Гаргульи', desc: 'Макс. HP +40 и исцеление на 40 HP.', apply: (p) => { p.maxHp += 40; p.hp = Math.min(p.maxHp, p.hp + 40); } },
-  { id: 'shock', name: 'Грозовой пепел', desc: 'Финальный удар комбо и парирование бразят цепной молнией.', apply: (p) => { p.chainLightning = true; } }
+  { id: 'shock', name: 'Грозовой пепел', desc: 'Каждый 3-й удар комбо и Парирование бьют ветвящейся Цепной Молнией по врагам.', apply: (p) => { p.chainLightning = true; p.swordColor = '#00f3ff'; } },
+  { id: 'vamp', name: 'Окровавленный клык', desc: 'Клинок наливается багровым: +6 HP за каждого убитого врага.', apply: (p) => { p.vampOnKill += 6; p.swordColor = '#ff2a4b'; } },
+  { id: 'crit', name: 'Обсидиановая грань', desc: 'Золотое лезвие: +25% к шансу критического удара (x1.8 урона).', apply: (p) => { p.critChance += 0.25; p.swordColor = '#ffbe42'; } },
+  { id: 'heavy', name: 'Печать Палача', desc: 'Урон меча +30%, радиус рассечения +18px.', apply: (p) => { p.dmg = Math.round(p.dmg * 1.3); p.rangeBonus += 18; } },
+  { id: 'swift', name: 'Ртутная поступь', desc: 'Скорость бега +20%, перезарядка рывка и ударов быстрее на 25%.', apply: (p) => { p.moveSpeed *= 1.2; p.dashCdMax *= 0.75; p.atkSpeedMult *= 0.8; } },
+  { id: 'vital', name: 'Сердце Гаргульи', desc: 'Макс. HP +45 и мгновенное исцеление на 45 HP.', apply: (p) => { p.maxHp += 45; p.hp = Math.min(p.maxHp, p.hp + 45); } }
 ];
 
 // =====================================================
-// 3. ХОЛСТ И МАСШТАБ
+// 4. ХОЛСТ И УПРАВЛЕНИЕ
 // =====================================================
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -436,22 +633,20 @@ let W = window.innerWidth, H = window.innerHeight;
 function resize() {
   W = window.innerWidth; H = window.innerHeight;
   canvas.width = W; canvas.height = H;
+  ctx.imageSmoothingEnabled = false;
 }
 window.addEventListener('resize', resize);
 resize();
 
-const VIEW_H = 500;
+const VIEW_H = 480;
 
-// =====================================================
-// 4. УПРАВЛЕНИЕ
-// =====================================================
 const input = {
   x: 0, y: 0,
   jumpHeld: false,
   jumpBuffer: 0,
-  atkBuffered: false,
-  dashBuffered: false,
-  parryBuffered: false,
+  atkPressed: false, // только одиночное нажатие, без закликивания в буфер!
+  dashPressed: false,
+  parryPressed: false,
   usePressed: false
 };
 
@@ -513,22 +708,23 @@ function bindBtn(id, onDown, onUp) {
 }
 
 bindBtn('btn-jmp', () => { input.jumpHeld = true; input.jumpBuffer = 0.15; }, () => { input.jumpHeld = false; });
-bindBtn('btn-atk', () => { input.atkBuffered = true; });
-bindBtn('btn-dash', () => { input.dashBuffered = true; });
-bindBtn('btn-parry', () => { input.parryBuffered = true; });
+bindBtn('btn-atk', () => { input.atkPressed = true; });
+bindBtn('btn-dash', () => { input.dashPressed = true; });
+bindBtn('btn-parry', () => { input.parryPressed = true; });
 bindBtn('btn-use', () => { input.usePressed = true; });
 
 window.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
   if (e.code === 'KeyA' || e.code === 'ArrowLeft') input.x = -1;
   if (e.code === 'KeyD' || e.code === 'ArrowRight') input.x = 1;
   if (e.code === 'KeyS' || e.code === 'ArrowDown') input.y = 1;
   if (e.code === 'Space' || e.code === 'KeyW') {
-    if (!input.jumpHeld) input.jumpBuffer = 0.15;
+    input.jumpBuffer = 0.15;
     input.jumpHeld = true;
   }
-  if (e.code === 'KeyJ') input.atkBuffered = true;
-  if (e.code === 'KeyK') input.parryBuffered = true;
-  if (e.code === 'ShiftLeft' || e.code === 'KeyL') input.dashBuffered = true;
+  if (e.code === 'KeyJ') input.atkPressed = true;
+  if (e.code === 'KeyK') input.parryPressed = true;
+  if (e.code === 'ShiftLeft' || e.code === 'KeyL') input.dashPressed = true;
   if (e.code === 'KeyE') input.usePressed = true;
 });
 window.addEventListener('keyup', (e) => {
@@ -539,37 +735,42 @@ window.addEventListener('keyup', (e) => {
 });
 
 // =====================================================
-// 5. ИГРОВЫЕ ПЕРЕМЕННЫЕ И МИР
+// 5. ИГРОВОЙ МИР, ИГРОК, ВЕТВЯЩИЕСЯ МОЛНИИ И КРОВЬ
 // =====================================================
 let hitstopTimer = 0;
 const cam = { x: 0, y: 0, shake: 0 };
 
 const player = {
-  x: 140, y: 350, w: 26, h: 46,
+  x: 140, y: 350, w: 30, h: 46,
   vx: 0, vy: 0,
   facing: 1,
   grounded: false,
   coyoteTimer: 0,
   wallDir: 0,
-  moveSpeed: 320,
+  moveSpeed: 315,
   hp: 100, maxHp: 100,
-  dmg: 24,
+  dmg: 25,
   critChance: 0.15,
   vampOnKill: 0,
   rangeBonus: 0,
   chainLightning: false,
+  swordColor: '#dce6ff',
+  atkSpeedMult: 1.0,
   souls: 0,
   relics: [],
+  // Жёсткие тайминги комбо и КД ударов
   comboStep: 0,
   comboWindow: 0,
   atkTimer: 0,
-  recoveryTimer: 0, // Защита от спам-кликов!
+  atkCd: 0,
+  atkCdMax: 0.3,
   downSmash: false,
   dashTimer: 0,
   dashCd: 0,
-  dashCdMax: 0.6,
+  dashCdMax: 0.65,
   parryWindow: 0,
   parryCd: 0,
+  parryCdMax: 0.6,
   invuln: 0,
   animTime: 0,
   scarf: []
@@ -578,17 +779,18 @@ for (let i = 0; i < 6; i++) player.scarf.push({ x: player.x, y: player.y });
 
 let roomIndex = 1;
 let roomWidth = 2200;
-const FLOOR_Y = 440;
+const FLOOR_Y = 430;
 let platforms = [];
 let enemies = [];
 let particles = [];
-let lightningBolts = [];
+let bloodStains = [];
+let lightningBolts = []; // Визуальные зигзаги цепной молнии!
+let torches = [];
 let slashArcs = [];
 let floatTexts = [];
 let shrine = null;
 let portal = null;
 let bgPillars = [];
-let torches = [];
 
 function resetScarf() {
   for (let i = 0; i < player.scarf.length; i++) {
@@ -605,7 +807,7 @@ function spawnParticles(x, y, color, count = 12, speed = 220, gravity = 500) {
       x, y,
       vx: Math.cos(ang) * spd,
       vy: Math.sin(ang) * spd - 60,
-      size: 2.5 + Math.random() * 4,
+      size: 3 + Math.floor(Math.random() * 4),
       color,
       gravity,
       life: 0.3 + Math.random() * 0.35,
@@ -614,18 +816,33 @@ function spawnParticles(x, y, color, count = 12, speed = 220, gravity = 500) {
   }
 }
 
-function addLightningBolt(x1, y1, x2, y2) {
-  const points = [{x: x1, y: y1}];
-  const steps = 6;
-  for (let i = 1; i < steps; i++) {
-    const t = i / steps;
-    points.push({
-      x: x1 + (x2 - x1) * t + (Math.random() - 0.5) * 35,
-      y: y1 + (y2 - y1) * t + (Math.random() - 0.5) * 35
-    });
+// Генератор ветвящегося зигзага молнии между двумя координатами
+function spawnLightningBolt(x1, y1, x2, y2) {
+  const segments = 7;
+  const points = [{ x: x1, y: y1 }];
+  for (let i = 1; i < segments; i++) {
+    const t = i / segments;
+    const bx = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 28;
+    const by = y1 + (y2 - y1) * t + (Math.random() - 0.5) * 28;
+    points.push({ x: bx, y: by });
   }
-  points.push({x: x2, y: y2});
-  lightningBolts.push({ points, life: 0.22, maxLife: 0.22 });
+  points.push({ x: x2, y: y2 });
+  lightningBolts.push({ points, life: 0.24, maxLife: 0.24 });
+  sfx.thunder();
+}
+
+// Проверка прямой видимости (чтобы враги и молнии не били сквозь стены!)
+function hasLineOfSight(x1, y1, x2, y2) {
+  const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+  const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
+  for (const p of platforms) {
+    if (p.type === 'wall') {
+      if (maxX > p.x && minX < p.x + p.w && maxY > p.y + 4 && minY < p.y + p.h - 4) {
+        return false; // Между точками стоит каменная колонна!
+      }
+    }
+  }
+  return true;
 }
 
 function addFloatText(x, y, text, color = '#f5efe6', big = false) {
@@ -637,6 +854,7 @@ function generateRoom(num) {
   platforms = [];
   enemies = [];
   particles = [];
+  bloodStains = [];
   lightningBolts = [];
   slashArcs = [];
   bgPillars = [];
@@ -645,32 +863,33 @@ function generateRoom(num) {
   roomWidth = 1850 + num * 180;
 
   platforms.push({ x: -160, y: FLOOR_Y, w: roomWidth + 320, h: 240, type: 'floor' });
-  platforms.push({ x: -120, y: -400, w: 120, h: 1000, type: 'wall' });
-  platforms.push({ x: roomWidth, y: -400, w: 120, h: 1000, type: 'wall' });
+  platforms.push({ x: -128, y: -400, w: 128, h: 1000, type: 'wall' });
+  platforms.push({ x: roomWidth, y: -400, w: 128, h: 1000, type: 'wall' });
 
   for (let x = 140; x < roomWidth - 100; x += 240) {
-    bgPillars.push({ x, w: 54, h: 500 });
-    torches.push({ x: x + 27, y: FLOOR_Y - 135, flicker: Math.random() * 10 });
+    bgPillars.push({ x, w: 56, h: 500 });
+    torches.push({ x: x + 28, y: FLOOR_Y - 135, flicker: Math.random() * 10 });
   }
 
   let cursorX = 320;
   while (cursorX < roomWidth - 400) {
     const pat = Math.floor(Math.random() * 3);
     if (pat === 0) {
-      platforms.push({ x: cursorX, y: FLOOR_Y - 110, w: 190, h: 20, type: 'plat' });
-      platforms.push({ x: cursorX + 95, y: FLOOR_Y - 220, w: 165, h: 20, type: 'plat' });
+      platforms.push({ x: cursorX, y: FLOOR_Y - 110, w: 192, h: 22, type: 'plat' });
+      platforms.push({ x: cursorX + 96, y: FLOOR_Y - 220, w: 160, h: 22, type: 'plat' });
       spawnEnemyAt(cursorX + 80, FLOOR_Y - 110, num);
       cursorX += 340;
     } else if (pat === 1) {
-      platforms.push({ x: cursorX + 35, y: FLOOR_Y - 230, w: 42, h: 230, type: 'wall' });
-      platforms.push({ x: cursorX + 150, y: FLOOR_Y - 195, w: 175, h: 20, type: 'plat' });
-      spawnEnemyAt(cursorX + 220, FLOOR_Y - 195, num);
+      // Каменная башня для Wall-Jump
+      platforms.push({ x: cursorX + 32, y: FLOOR_Y - 224, w: 48, h: 224, type: 'wall' });
+      platforms.push({ x: cursorX + 148, y: FLOOR_Y - 192, w: 176, h: 22, type: 'plat' });
+      spawnEnemyAt(cursorX + 210, FLOOR_Y - 192, num);
       cursorX += 380;
     } else {
-      platforms.push({ x: cursorX, y: FLOOR_Y - 135, w: 240, h: 22, type: 'plat' });
+      platforms.push({ x: cursorX, y: FLOOR_Y - 135, w: 256, h: 22, type: 'plat' });
       spawnEnemyAt(cursorX + 110, FLOOR_Y - 135, num);
       spawnEnemyAt(cursorX + 160, FLOOR_Y, num);
-      cursorX += 350;
+      cursorX += 360;
     }
     if (Math.random() < 0.85) spawnEnemyAt(cursorX - 110, FLOOR_Y, num);
   }
@@ -680,7 +899,8 @@ function generateRoom(num) {
 
   player.x = 110;
   player.y = FLOOR_Y - player.h - 4;
-  player.vx = 0; player.vy = 0;
+  player.vx = 0;
+  player.vy = 0;
   player.grounded = true;
   player.downSmash = false;
   resetScarf();
@@ -699,9 +919,9 @@ function spawnEnemyAt(x, groundY, level) {
   const isWarden = type === 'warden';
   const isWraith = type === 'wraith';
 
-  const w = isWarden ? 36 : 26;
-  const h = isWarden ? 54 : (isWraith ? 42 : 44);
-  const maxHp = Math.round((isWarden ? 95 : (isWraith ? 55 : 65)) * (1 + (level - 1) * 0.25));
+  const w = isWarden ? 36 : 30;
+  const h = isWarden ? 52 : (isWraith ? 42 : 44);
+  const maxHp = Math.round((isWarden ? 105 : (isWraith ? 58 : 70)) * (1 + (level - 1) * 0.25));
 
   enemies.push({
     type,
@@ -712,41 +932,45 @@ function spawnEnemyAt(x, groundY, level) {
     facing: -1,
     state: 'chase',
     timer: 0,
-    atkCooldown: 0.5,
-    flashTimer: 0
+    atkCooldown: 0.4,
+    flashTimer: 0,
+    animOffset: Math.random() * 10
   });
 }
 
 // =====================================================
-// 6. БОЁВКА С ТАЙМИНГАМИ (УСТРАНЕН СПАМ-КЛИК)
+// 6. БОЕВАЯ СИСТЕМА С ЧЕСТНЫМ КД И ВИЗУАЛЬНОЙ МОЛНИЕЙ
 // =====================================================
 function performAttack() {
-  input.atkBuffered = false;
-
+  // Удар в падении (Down-Smash)
   if (!player.grounded && input.y > 0.4) {
     player.downSmash = true;
-    player.vy = 690;
+    player.vy = 700;
     player.atkTimer = 0.35;
-    player.recoveryTimer = 0.25;
+    player.atkCd = 0.45 * player.atkSpeedMult;
+    player.atkCdMax = player.atkCd;
     sfx.slash(3);
     return;
   }
 
-  if (player.comboWindow > 0) {
-    player.comboStep = (player.comboStep % 3) + 1;
+  if (player.comboWindow > 0 && player.comboStep < 3) {
+    player.comboStep++;
   } else {
     player.comboStep = 1;
   }
 
   const isFinisher = player.comboStep === 3;
-  player.atkTimer = isFinisher ? 0.24 : 0.16;
-  // ЖЁСТКАЯ ЗАДЕРЖКА (RECOVERY): нельзя спамить удары без остановки!
-  player.recoveryTimer = isFinisher ? 0.38 : 0.22;
-  player.comboWindow = 0.58;
-  player.vx = player.facing * (isFinisher ? 310 : 175);
+  // Длительность самого взмаха
+  player.atkTimer = (isFinisher ? 0.30 : 0.20) * player.atkSpeedMult;
+  // ЖЁСТКАЯ ЗАДЕРЖКА ДО СЛЕДУЮЩЕГО УДАРА (после 3-го удара — длинная пауза 0.58с!)
+  player.atkCd = (isFinisher ? 0.58 : (player.comboStep === 2 ? 0.32 : 0.28)) * player.atkSpeedMult;
+  player.atkCdMax = player.atkCd;
+  player.comboWindow = isFinisher ? 0 : 0.72;
+
+  player.vx = player.facing * (isFinisher ? 300 : 165);
   sfx.slash(player.comboStep);
 
-  const reach = (isFinisher ? 80 : 62) + player.rangeBonus;
+  const reach = (isFinisher ? 82 : 64) + player.rangeBonus;
   const hitX = player.facing === 1 ? player.x + player.w * 0.4 : player.x + player.w * 0.6 - reach;
   const hitY = player.y - 10;
   const hitW = reach;
@@ -757,38 +981,58 @@ function performAttack() {
     y: player.y + player.h / 2,
     dir: player.facing,
     step: player.comboStep,
+    color: isFinisher ? '#ffbe42' : player.swordColor,
     radius: reach,
-    life: 0.16,
-    maxLife: 0.16
+    life: 0.18,
+    maxLife: 0.18
   });
 
   let hitAny = false;
+  const pxCenter = player.x + player.w / 2;
+  const pyCenter = player.y + player.h / 2;
+
   enemies.forEach(e => {
-    if (rectOverlap(hitX, hitY, hitW, hitH, e.x, e.y, e.w, e.h)) {
+    const exCenter = e.x + e.w / 2;
+    const eyCenter = e.y + e.h / 2;
+    // Проверяем попадание И отсутствие каменной стены между героем и врагом!
+    if (rectOverlap(hitX, hitY, hitW, hitH, e.x, e.y, e.w, e.h) &&
+        hasLineOfSight(pxCenter, pyCenter, exCenter, eyCenter)) {
       hitAny = true;
       const stunnedBonus = e.state === 'stunned' ? 1.8 : 1.0;
       const isCrit = isFinisher || e.state === 'stunned' || Math.random() < player.critChance;
-      const dmg = Math.round(player.dmg * (isFinisher ? 1.45 : 1.0) * (isCrit ? 1.75 : 1.0) * stunnedBonus);
+      const dmg = Math.round(player.dmg * (isFinisher ? 1.45 : 1.0) * (isCrit ? 1.7 : 1.0) * stunnedBonus);
       damageEnemy(e, dmg, player.facing * (isFinisher ? 320 : 190), isCrit);
 
-      // Видимая цепная молния
-      if (isFinisher && player.chainLightning) {
-        sfx.lightning();
-        enemies.forEach(other => {
-          if (other !== e && Math.hypot(other.x - e.x, other.y - e.y) < 230) {
-            addLightningBolt(e.x + e.w/2, e.y + e.h/2, other.x + other.w/2, other.y + other.h/2);
-            damageEnemy(other, Math.round(dmg * 0.6), player.facing * 150, false, '#6ab0e8');
-          }
-        });
+      // ВИЗУАЛЬНАЯ ЦЕПНАЯ МОЛНИЯ!
+      if ((isFinisher || e.state === 'stunned') && player.chainLightning) {
+        triggerChainLightning(e, Math.round(dmg * 0.65));
       }
     }
   });
 
   if (hitAny) {
     hitstopTimer = isFinisher ? 0.065 : 0.035;
-    cam.shake = isFinisher ? 8.5 : 4;
+    cam.shake = isFinisher ? 9 : 4.5;
     if (navigator.vibrate) navigator.vibrate(isFinisher ? 35 : 15);
   }
+}
+
+function triggerChainLightning(sourceEnemy, boltDmg) {
+  const sx = sourceEnemy.x + sourceEnemy.w / 2;
+  const sy = sourceEnemy.y + sourceEnemy.h / 2;
+  // Сначала бьёт разряд от меча героя к основной цели
+  spawnLightningBolt(player.x + player.w / 2, player.y + 20, sx, sy);
+
+  enemies.forEach(other => {
+    if (other !== sourceEnemy && other.hp > 0) {
+      const ox = other.x + other.w / 2;
+      const oy = other.y + other.h / 2;
+      if (Math.hypot(ox - sx, oy - sy) < 260) {
+        spawnLightningBolt(sx, sy, ox, oy);
+        damageEnemy(other, boltDmg, Math.sign(ox - sx) * 180, false, '#00f3ff');
+      }
+    }
+  });
 }
 
 function damageEnemy(e, dmg, knockVx, isCrit, customColor = null) {
@@ -798,15 +1042,20 @@ function damageEnemy(e, dmg, knockVx, isCrit, customColor = null) {
   e.flashTimer = 0.12;
   if (e.state !== 'stunned' && (e.type !== 'warden' || isCrit)) {
     e.state = 'stagger';
-    e.timer = 0.24;
+    e.timer = 0.25;
   }
 
   sfx.hit(isCrit);
   spawnParticles(e.x + e.w / 2, e.y + e.h / 2, customColor || (isCrit ? '#ffbe42' : '#d93848'), isCrit ? 16 : 9, 260);
-  addFloatText(e.x + e.w / 2, e.y - 8, isCrit ? `${dmg}!` : `${dmg}`, isCrit ? '#ffbe42' : '#f5efe6', isCrit);
+  addFloatText(e.x + e.w / 2, e.y - 8, isCrit ? `${dmg}!` : `${dmg}`, customColor || (isCrit ? '#ffbe42' : '#f5efe6'), isCrit);
+
+  // Оставляем капли крови на полу
+  if (bloodStains.length < 60) {
+    bloodStains.push({ x: e.x + Math.random() * e.w, y: FLOOR_Y, w: 6 + Math.random() * 10 });
+  }
 
   if (e.hp <= 0) {
-    spawnParticles(e.x + e.w / 2, e.y + e.h / 2, '#9e1b28', 22, 320);
+    spawnParticles(e.x + e.w / 2, e.y + e.h / 2, '#9e1b28', 24, 320);
     player.souls += e.type === 'warden' ? 25 : 12;
     if (player.vampOnKill > 0) {
       player.hp = Math.min(player.maxHp, player.hp + player.vampOnKill);
@@ -846,7 +1095,7 @@ function openRelicModal() {
 }
 
 // =====================================================
-// 7. ФИЗИКА С УЧЁТОМ СТЕН ДЛЯ ИИ
+// 7. ФИЗИЧЕСКИЙ ДВИЖОК (СТЕНЫ ДЛЯ ВРАГОВ + КУЛДАУНЫ)
 // =====================================================
 const GRAVITY = 1520;
 
@@ -861,27 +1110,28 @@ function update(dt) {
   if (input.jumpBuffer > 0) input.jumpBuffer -= dt;
   if (player.coyoteTimer > 0) player.coyoteTimer -= dt;
   if (player.atkTimer > 0) player.atkTimer -= dt;
-  if (player.recoveryTimer > 0) player.recoveryTimer -= dt; // таймер задержки удара
-  if (player.comboWindow > 0) player.comboWindow -= dt;
+  if (player.atkCd > 0) player.atkCd -= dt;
+  if (player.comboWindow > 0) {
+    player.comboWindow -= dt;
+    if (player.comboWindow <= 0) player.comboStep = 0;
+  }
   if (player.dashTimer > 0) player.dashTimer -= dt;
   if (player.dashCd > 0) player.dashCd -= dt;
   if (player.parryWindow > 0) player.parryWindow -= dt;
   if (player.parryCd > 0) player.parryCd -= dt;
   if (player.invuln > 0) player.invuln -= dt;
 
-  // Парирование
-  if (input.parryBuffered && player.parryCd <= 0 && player.dashTimer <= 0) {
-    input.parryBuffered = false;
+  // 1. Парирование щитом
+  if (input.parryPressed && player.parryCd <= 0 && player.dashTimer <= 0) {
     player.parryWindow = 0.28;
-    player.parryCd = 0.55;
+    player.parryCd = player.parryCdMax;
     player.vx *= 0.2;
     sfx.slash(1);
   }
-  input.parryBuffered = false;
+  input.parryPressed = false;
 
-  // Рывок
-  if (input.dashBuffered && player.dashCd <= 0 && player.dashTimer <= 0) {
-    input.dashBuffered = false;
+  // 2. Рывок
+  if (input.dashPressed && player.dashCd <= 0 && player.dashTimer <= 0) {
     player.dashTimer = 0.18;
     player.dashCd = player.dashCdMax;
     player.invuln = 0.25;
@@ -892,15 +1142,16 @@ function update(dt) {
     sfx.dash();
     spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#c4a46c', 10, 160, 0);
   }
-  input.dashBuffered = false;
+  input.dashPressed = false;
 
-  // Атака (теперь проверяет recoveryTimer!)
-  if (input.atkBuffered && player.atkTimer <= 0 && player.recoveryTimer <= 0 && player.dashTimer <= 0) {
+  // 3. Атака мечом (срабатывает ТОЛЬКО если прошёл кулдаун atkCd!)
+  if (input.atkPressed && player.atkCd <= 0 && player.dashTimer <= 0) {
     performAttack();
   }
+  input.atkPressed = false;
 
-  // Движение
-  if (player.dashTimer <= 0 && player.atkTimer <= 0 && player.recoveryTimer <= 0 && player.parryWindow <= 0) {
+  // 4. Горизонтальное движение героя
+  if (player.dashTimer <= 0 && player.atkTimer <= 0 && player.parryWindow <= 0) {
     if (input.x !== 0) {
       player.facing = Math.sign(input.x);
       const targetVx = input.x * player.moveSpeed;
@@ -908,11 +1159,11 @@ function update(dt) {
     } else {
       player.vx *= Math.pow(0.001, dt);
     }
-  } else {
-    player.vx *= Math.pow(0.05, dt);
+  } else if (player.atkTimer > 0 && !player.downSmash) {
+    player.vx *= Math.pow(0.02, dt);
   }
 
-  // Гравитация
+  // 5. Гравитация и скольжение по стенам
   if (player.dashTimer <= 0) {
     let g = GRAVITY;
     if (player.vy < 0 && !input.jumpHeld) g *= 2.3;
@@ -924,7 +1175,7 @@ function update(dt) {
     }
   }
 
-  // Прыжок
+  // 6. Прыжок и Wall-Jump
   if (input.jumpBuffer > 0) {
     if (player.coyoteTimer > 0) {
       player.vy = -560;
@@ -944,7 +1195,7 @@ function update(dt) {
     }
   }
 
-  // Коллизии игрока со стенами
+  // 7. Горизонтальная коллизия героя со стенами
   player.x += player.vx * dt;
   player.wallDir = 0;
   for (const p of platforms) {
@@ -962,6 +1213,7 @@ function update(dt) {
     }
   }
 
+  // 8. Вертикальная коллизия героя с полом и платформами
   const prevBottom = player.y + player.h;
   player.y += player.vy * dt;
   player.grounded = false;
@@ -1002,7 +1254,8 @@ function update(dt) {
       sfx.hit(true);
       spawnParticles(player.x + player.w / 2, surfaceY, '#e05364', 24, 340);
       enemies.forEach(e => {
-        if (Math.abs((e.x + e.w / 2) - (player.x + player.w / 2)) < 140 && Math.abs((e.y + e.h) - surfaceY) < 65) {
+        if (Math.abs((e.x + e.w / 2) - (player.x + player.w / 2)) < 145 && Math.abs((e.y + e.h) - surfaceY) < 65 &&
+            hasLineOfSight(player.x + player.w / 2, player.y + 20, e.x + e.w / 2, e.y + 20)) {
           damageEnemy(e, Math.round(player.dmg * 1.6), Math.sign(e.x - player.x) * 320, true);
         }
       });
@@ -1012,13 +1265,14 @@ function update(dt) {
     player.coyoteTimer = 0.12;
   }
 
+  // Физика плаща
   let leadX = player.x + player.w / 2 - player.facing * 5;
-  let leadY = player.y + 11;
+  let leadY = player.y + 12;
   player.scarf.forEach((node, idx) => {
     node.x += (leadX - node.x - player.facing * 5) * Math.min(1, dt * (24 - idx * 2));
     node.y += (leadY - node.y + Math.sin(performance.now() * 0.015 + idx) * 1.8) * Math.min(1, dt * 20);
     const dist = Math.hypot(node.x - leadX, node.y - leadY);
-    if (dist > 16) {
+    if (dist > 15) {
       const ang = Math.atan2(node.y - leadY, node.x - leadX);
       node.x = leadX + Math.cos(ang) * 10;
       node.y = leadY + Math.sin(ang) * 10;
@@ -1026,7 +1280,10 @@ function update(dt) {
     leadX = node.x; leadY = node.y;
   });
 
-  // 8. ИИ Врагов С УЧЁТОМ СТЕН (не проходят насквозь колонн!)
+  // 9. ИИ Врагов + ЖЁСТКАЯ КОЛЛИЗИЯ СО СТЕНАМИ + LINE OF SIGHT
+  const pxCenter = player.x + player.w / 2;
+  const pyCenter = player.y + player.h / 2;
+
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
     if (e.hp <= 0) {
@@ -1036,36 +1293,39 @@ function update(dt) {
     if (e.flashTimer > 0) e.flashTimer -= dt;
     if (e.atkCooldown > 0) e.atkCooldown -= dt;
 
-    const dx = (player.x + player.w / 2) - (e.x + e.w / 2);
-    const dy = (player.y + player.h / 2) - (e.y + e.h / 2);
+    const exCenter = e.x + e.w / 2;
+    const eyCenter = e.y + e.h / 2;
+    const dx = pxCenter - exCenter;
+    const dy = pyCenter - eyCenter;
     const dist = Math.hypot(dx, dy);
+    const canSeePlayer = hasLineOfSight(exCenter, eyCenter, pxCenter, pyCenter);
 
     if (e.state === 'stunned' || e.state === 'stagger') {
       e.timer -= dt;
       e.vx *= Math.pow(0.01, dt);
       if (e.timer <= 0) e.state = 'chase';
     } else if (e.state === 'windup') {
-      e.vx *= 0.85;
+      e.vx *= 0.82;
       e.timer -= dt;
       if (e.timer <= 0) {
         e.state = 'strike';
         e.timer = 0.16;
-        e.vx = e.facing * (e.type === 'warden' ? 340 : 420);
+        e.vx = e.facing * (e.type === 'warden' ? 320 : 390);
 
-        if (Math.abs(dx) < (e.type === 'warden' ? 76 : 60) && Math.abs(dy) < 52) {
+        // Враг наносит урон ТОЛЬКО если между вами нет каменного столба!
+        if (Math.abs(dx) < (e.type === 'warden' ? 74 : 58) && Math.abs(dy) < 52 &&
+            hasLineOfSight(exCenter, eyCenter, pxCenter, pyCenter)) {
           if (player.parryWindow > 0) {
             sfx.parryClang();
             hitstopTimer = 0.09;
             cam.shake = 12;
             e.state = 'stunned';
-            e.timer = 2.0;
+            e.timer = 2.2;
             e.vx = -e.facing * 260;
-            spawnParticles(player.x + player.w / 2 + player.facing * 14, player.y + 20, '#6ab0e8', 22, 320);
-            addFloatText(e.x + e.w / 2, e.y - 16, 'ПАРИРОВАНИЕ!', '#6ab0e8', true);
+            spawnParticles(pxCenter + player.facing * 14, pyCenter, '#6ab0e8', 22, 320);
+            addFloatText(exCenter, e.y - 16, 'ПАРИРОВАНИЕ!', '#6ab0e8', true);
             if (player.chainLightning) {
-              sfx.lightning();
-              addLightningBolt(player.x, player.y, e.x + e.w/2, e.y + e.h/2);
-              damageEnemy(e, Math.round(player.dmg * 1.5), -e.facing * 200, true, '#6ab0e8');
+              triggerChainLightning(e, Math.round(player.dmg * 0.8));
             }
             if (navigator.vibrate) navigator.vibrate([30, 20, 50]);
           } else {
@@ -1077,41 +1337,46 @@ function update(dt) {
       e.timer -= dt;
       if (e.timer <= 0) {
         e.state = 'chase';
-        e.atkCooldown = e.type === 'warden' ? 1.2 : 0.8;
+        e.atkCooldown = e.type === 'warden' ? 1.25 : 0.85;
       }
     } else {
-      if (dist < 450) {
+      if (dist < 420 && (canSeePlayer || e.type === 'wraith')) {
         e.facing = dx >= 0 ? 1 : -1;
-        const spd = e.type === 'warden' ? 105 : (e.type === 'wraith' ? 190 : 150);
-        if (Math.abs(dx) > 44) {
+        const spd = e.type === 'warden' ? 105 : (e.type === 'wraith' ? 190 : 155);
+        if (Math.abs(dx) > 42) {
           e.vx += (e.facing * spd - e.vx) * dt * 8;
-        } else if (e.atkCooldown <= 0 && Math.abs(dy) < 55) {
+        } else if (e.atkCooldown <= 0 && Math.abs(dy) < 55 && canSeePlayer) {
           e.state = 'windup';
-          e.timer = e.type === 'warden' ? 0.52 : 0.38;
+          e.timer = e.type === 'warden' ? 0.54 : 0.40;
         }
       } else {
-        e.vx *= 0.9;
+        e.vx *= 0.88;
       }
     }
 
-    if (e.type !== 'wraith') {
-      const prevEBottom = e.y + e.h;
-      e.vy = Math.min(800, e.vy + GRAVITY * dt);
-
-      // Проверка столкновений врагов со стенами (блокируем проход сквозь колонны!)
-      e.x += e.vx * dt;
-      for (const p of platforms) {
-        if (p.type === 'wall' && rectOverlap(e.x, e.y + 4, e.w, e.h - 8, p.x, p.y, p.w, p.h)) {
-          if (e.vx > 0) e.x = p.x - e.w;
-          else if (e.vx < 0) e.x = p.x + p.w;
+    // Движение врагов по X + ЖЁСТКАЯ КОЛЛИЗИЯ СО СТОЛБАМИ И СТЕНАМИ!
+    e.x += e.vx * dt;
+    for (const p of platforms) {
+      if (p.type === 'wall') {
+        if (rectOverlap(e.x, e.y + 4, e.w, e.h - 8, p.x, p.y, p.w, p.h)) {
+          if (e.vx > 0 || (e.x + e.w / 2 < p.x + p.w / 2)) {
+            e.x = p.x - e.w;
+          } else {
+            e.x = p.x + p.w;
+          }
           e.vx = 0;
         }
       }
+    }
 
+    // Движение врагов по Y
+    if (e.type !== 'wraith') {
+      const prevEBottom = e.y + e.h;
+      e.vy = Math.min(800, e.vy + GRAVITY * dt);
       e.y += e.vy * dt;
       for (const p of platforms) {
         if (e.vy >= 0 && prevEBottom <= p.y + 18 &&
-            e.x + e.w > p.x && e.x < p.x + p.w &&
+            e.x + e.w > p.x + 2 && e.x < p.x + p.w - 2 &&
             e.y + e.h >= p.y && e.y + e.h <= p.y + 30) {
           e.y = p.y - e.h;
           e.vy = 0;
@@ -1122,13 +1387,12 @@ function update(dt) {
         e.vy = 0;
       }
     } else {
-      e.x += e.vx * dt;
       const targetY = Math.min(FLOOR_Y - e.h - 10, player.y - 6);
       e.y += (targetY - e.y) * dt * 2.5;
     }
   }
 
-  // 9. Взаимодействие
+  // 10. Взаимодействие с Алтарём и Вратами
   const useBtn = document.getElementById('btn-use');
   const nearShrine = shrine && !shrine.used && Math.hypot(player.x - shrine.x, (player.y + player.h) - shrine.y) < 75;
   const nearPortal = portal && enemies.length === 0 && Math.hypot(player.x - portal.x, (player.y + player.h) - portal.y) < 85;
@@ -1146,7 +1410,7 @@ function update(dt) {
     input.usePressed = false;
   }
 
-  // 10. Очистка частиц и молний
+  // 11. Обновление частиц, дуг и молний
   for (let i = particles.length - 1; i >= 0; i--) {
     const pt = particles[i];
     pt.vy += pt.gravity * dt;
@@ -1155,13 +1419,13 @@ function update(dt) {
     pt.life -= dt;
     if (pt.life <= 0) particles.splice(i, 1);
   }
-  for (let i = lightningBolts.length - 1; i >= 0; i--) {
-    lightningBolts[i].life -= dt;
-    if (lightningBolts[i].life <= 0) lightningBolts.splice(i, 1);
-  }
   for (let i = slashArcs.length - 1; i >= 0; i--) {
     slashArcs[i].life -= dt;
     if (slashArcs[i].life <= 0) slashArcs.splice(i, 1);
+  }
+  for (let i = lightningBolts.length - 1; i >= 0; i--) {
+    lightningBolts[i].life -= dt;
+    if (lightningBolts[i].life <= 0) lightningBolts.splice(i, 1);
   }
   for (let i = floatTexts.length - 1; i >= 0; i--) {
     const ft = floatTexts[i];
@@ -1170,6 +1434,7 @@ function update(dt) {
     if (ft.life <= 0) floatTexts.splice(i, 1);
   }
 
+  // 12. Камера
   const scale = H / VIEW_H;
   const viewW = W / scale;
   const targetCamX = Math.max(-60, Math.min(roomWidth - viewW + 60, player.x + player.w / 2 + player.facing * 55 - viewW / 2));
@@ -1195,9 +1460,11 @@ function hurtPlayer(dmg, knockVx) {
 
   if (player.hp <= 0) {
     player.hp = 100; player.maxHp = 100;
-    player.dmg = 24; player.critChance = 0.15;
+    player.dmg = 25; player.critChance = 0.15;
     player.vampOnKill = 0; player.rangeBonus = 0;
     player.chainLightning = false;
+    player.swordColor = '#dce6ff';
+    player.atkSpeedMult = 1.0;
     player.relics = [];
     player.souls = 0;
     generateRoom(1);
@@ -1212,25 +1479,46 @@ function updateHUD() {
   document.getElementById('atk-txt').textContent = `УРОН: ${player.dmg}`;
   document.getElementById('souls-txt').textContent = `ПЕПЕЛ: ${player.souls}`;
   document.getElementById('room-name').textContent = `ЗАЛ ${roomIndex} — ЦИТАДЕЛЬ ПЕПЛА`;
-  document.getElementById('room-status').textContent = enemies.length >0
+  document.getElementById('room-status').textContent = enemies.length > 0
     ? `Врагов в зале: ${enemies.length}`
     : `Зал очищен — Врата открыты!`;
   document.getElementById('relics-list').innerHTML = player.relics.map(r => `<span class="relic-tag">${r}</span>`).join('');
+
+  // Точки комбо
+  for (let i = 1; i <= 3; i++) {
+    const dot = document.getElementById(`cd-${i}`);
+    if (player.comboWindow > 0 && player.comboStep >= i) dot.classList.add('active');
+    else dot.classList.remove('active');
+  }
+
+  // Индикаторы перезарядки на кнопках
+  document.getElementById('cd-atk').style.height = player.atkCd > 0 ? `${(player.atkCd / player.atkCdMax) * 100}%` : '0%';
+  document.getElementById('cd-dash').style.height = player.dashCd > 0 ? `${(player.dashCd / player.dashCdMax) * 100}%` : '0%';
+  document.getElementById('cd-parry').style.height = player.parryCd > 0 ? `${(player.parryCd / player.parryCdMax) * 100}%` : '0%';
 }
 
 // =====================================================
-// 8. РЕНДЕР С УНИКАЛЬНЫМИ СПРАЙТАМИ И МОЛНИЯМИ
+// 8. ПИКСЕЛЬ-АРТ РЕНДЕР МИРА
 // =====================================================
+let stonePattern = null;
+let platPattern = null;
+
 function render() {
+  if (!stonePattern) {
+    stonePattern = ctx.createPattern(STONE_TILE, 'repeat');
+    platPattern = ctx.createPattern(PLAT_TILE, 'repeat');
+  }
+
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, '#090a10');
-  grad.addColorStop(1, '#141722');
+  grad.addColorStop(0, '#07080d');
+  grad.addColorStop(1, '#121521');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
   const scale = H / VIEW_H;
   ctx.save();
   ctx.scale(scale, scale);
+  ctx.imageSmoothingEnabled = false;
 
   const sx = (Math.random() - 0.5) * cam.shake;
   const sy = (Math.random() - 0.5) * cam.shake;
@@ -1238,113 +1526,140 @@ function render() {
 
   const now = performance.now();
 
+  // 1. Готические колонны на фоне
   bgPillars.forEach(b => {
     const px = b.x - cam.x * 0.15;
-    ctx.fillStyle = '#11131c';
+    ctx.fillStyle = '#0f111a';
     ctx.fillRect(px, -40, b.w, b.h);
-    ctx.fillStyle = '#181b28';
-    ctx.fillRect(px + 8, -40, 10, b.h);
-    ctx.strokeStyle = '#222638';
+    ctx.fillStyle = '#171a26';
+    ctx.fillRect(px + 8, -40, 12, b.h);
+    ctx.strokeStyle = '#202436';
     ctx.lineWidth = 2;
     ctx.strokeRect(px, -40, b.w, b.h);
   });
 
+  // 2. Горящие факелы
   torches.forEach(t => {
-    const rad = 58 + Math.sin(now * 0.012 + t.flicker) * 7;
+    const rad = 62 + Math.sin(now * 0.012 + t.flicker) * 7;
     const tGrad = ctx.createRadialGradient(t.x, t.y, 4, t.x, t.y, rad);
-    tGrad.addColorStop(0, 'rgba(255, 165, 60, 0.35)');
-    tGrad.addColorStop(1, 'rgba(255, 120, 30, 0)');
+    tGrad.addColorStop(0, 'rgba(255, 165, 55, 0.36)');
+    tGrad.addColorStop(1, 'rgba(255, 110, 20, 0)');
     ctx.fillStyle = tGrad;
     ctx.beginPath();
     ctx.arc(t.x, t.y, rad, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#3a2b22';
+    ctx.fillStyle = '#3b281e';
     ctx.fillRect(t.x - 3, t.y, 6, 18);
-    ctx.fillStyle = '#ffae38';
-    ctx.beginPath();
-    ctx.arc(t.x, t.y - 3, 5 + Math.sin(now * 0.02 + t.flicker) * 1.5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = '#ffbe42';
+    ctx.fillRect(t.x - 4, t.y - 8, 8, 8);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(t.x - 2, t.y - 6, 4, 4);
   });
 
+  // 3. Алтарь Предков с парящим рунным кристаллом
   if (shrine) {
-    ctx.fillStyle = shrine.used ? '#2b2d38' : '#c4a46c';
-    ctx.beginPath();
-    ctx.moveTo(shrine.x - 20, shrine.y);
-    ctx.lineTo(shrine.x, shrine.y - 58);
-    ctx.lineTo(shrine.x + 20, shrine.y);
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillStyle = '#252836';
+    ctx.fillRect(shrine.x - 22, shrine.y - 16, 44, 16);
+    ctx.fillStyle = '#383d52';
+    ctx.fillRect(shrine.x - 14, shrine.y - 38, 28, 22);
     if (!shrine.used) {
-      ctx.fillStyle = 'rgba(196, 164, 108, 0.22)';
+      const hoverY = shrine.y - 54 + Math.sin(now * 0.005) * 5;
+      ctx.fillStyle = 'rgba(196, 164, 108, 0.25)';
       ctx.beginPath();
-      ctx.arc(shrine.x, shrine.y - 32, 36 + Math.sin(now * 0.006) * 5, 0, Math.PI * 2);
+      ctx.arc(shrine.x, hoverY, 26, 0, Math.PI * 2);
       ctx.fill();
+      ctx.fillStyle = '#f2d899';
+      ctx.fillRect(shrine.x - 6, hoverY - 6, 12, 12);
     }
   }
 
+  // 4. Врата перехода
   if (portal) {
     const active = enemies.length === 0;
+    ctx.fillStyle = '#1f2330';
+    ctx.fillRect(portal.x - 28, portal.y - 82, 56, 82);
     ctx.strokeStyle = active ? '#68e09c' : '#3a3d4a';
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 4;
     ctx.strokeRect(portal.x - 24, portal.y - 78, 48, 78);
     if (active) {
-      ctx.fillStyle = 'rgba(104, 224, 156, 0.25)';
+      ctx.fillStyle = 'rgba(104, 224, 156, 0.3)';
       ctx.fillRect(portal.x - 20, portal.y - 74, 40, 74);
     }
   }
 
+  // 5. Каменные платформы и стены с пиксельным паттерном
   platforms.forEach(p => {
-    ctx.fillStyle = p.type === 'plat' ? '#282c3a' : '#171922';
+    ctx.fillStyle = p.type === 'plat' ? platPattern : stonePattern;
     ctx.fillRect(p.x, p.y, p.w, p.h);
-    ctx.fillStyle = p.type === 'plat' ? '#4a5268' : '#2d3242';
-    ctx.fillRect(p.x, p.y, p.w, 6);
-    ctx.strokeStyle = p.type === 'plat' ? '#646e8a' : '#353a4d';
+
+    // Верхний карниз плиты
+    ctx.fillStyle = p.type === 'plat' ? '#5c6684' : '#32384d';
+    ctx.fillRect(p.x, p.y, p.w, 5);
+
+    ctx.strokeStyle = '#0a0b10';
     ctx.lineWidth = 2;
     ctx.strokeRect(p.x, p.y, p.w, p.h);
   });
 
-  // Отрисовка врагов
+  // Следы крови на камнях
+  ctx.fillStyle = '#751522';
+  bloodStains.forEach(b => {
+    ctx.fillRect(b.x, b.y - 2, b.w, 4);
+  });
+
+  // 6. ПИКСЕЛЬНЫЕ СПРАЙТЫ ВРАГОВ
   enemies.forEach(e => {
     ctx.save();
+    const bob = Math.sin(now * 0.012 + e.animOffset) * 2;
+
     if (e.state === 'windup') {
-      ctx.strokeStyle = '#ffbe42';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(e.x + e.w / 2, e.y - 12, 8, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.fillStyle = '#ffbe42';
+      ctx.font = '900 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('!', e.x + e.w / 2, e.y - 12);
     }
     if (e.state === 'stunned') {
       ctx.fillStyle = '#6ab0e8';
-      ctx.font = '900 11px sans-serif';
+      ctx.font = '900 10px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('ОГЛУШЁН', e.x + e.w / 2, e.y - 16);
+      ctx.fillText('ОГЛУШЁН', e.x + e.w / 2, e.y - 14);
     }
 
-    ctx.fillStyle = e.flashTimer > 0 ? '#ffffff' : (e.type === 'warden' ? '#5e1d27' : (e.type === 'wraith' ? '#36566e' : '#3d3347'));
-    ctx.fillRect(e.x, e.y + 8, e.w, e.h - 8);
+    const sprite = e.type === 'warden' ? SPRITE_WARDEN : (e.type === 'wraith' ? SPRITE_WRAITH : SPRITE_STALKER);
+    ctx.translate(e.x + e.w / 2, e.y + e.h / 2 + bob);
+    ctx.scale(e.facing, 1);
 
-    ctx.fillStyle = e.flashTimer > 0 ? '#ffffff' : '#26222e';
-    ctx.fillRect(e.x + 4, e.y, e.w - 8, 14);
+    if (e.flashTimer > 0) ctx.filter = 'brightness(4)';
+    ctx.drawImage(sprite, -e.w / 2 - 4, -e.h / 2 - 2, e.w + 8, e.h + 4);
+    ctx.filter = 'none';
 
-    ctx.fillStyle = e.state === 'windup' ? '#ffbe42' : (e.state === 'stunned' ? '#6ab0e8' : '#ff2a44');
-    const eyeX = e.facing === 1 ? e.x + e.w - 9 : e.x + 4;
-    ctx.fillRect(eyeX, e.y + 5, 5, 4);
-
-    if (e.hp < e.maxHp) {
-      ctx.fillStyle = '#181214';
-      ctx.fillRect(e.x - 4, e.y - 9, e.w + 8, 4);
-      ctx.fillStyle = '#e0384b';
-      ctx.fillRect(e.x - 4, e.y - 9, (e.w + 8) * (e.hp / e.maxHp), 4);
+    // Оружие в руках врага
+    ctx.fillStyle = e.state === 'windup' ? '#ffbe42' : '#8d96ad';
+    if (e.type === 'warden') {
+      // Двуручная секира Палача
+      ctx.fillRect(10, -16, 4, 34);
+      ctx.fillStyle = '#d93848';
+      ctx.fillRect(12, -14, 10, 14);
+    } else if (e.type === 'stalker') {
+      // Зубчатый клинок Скелета
+      ctx.fillRect(10, -6, 14, 4);
     }
     ctx.restore();
+
+    // Полоска HP врага
+    if (e.hp < e.maxHp) {
+      ctx.fillStyle = '#120d0f';
+      ctx.fillRect(e.x - 3, e.y - 9, e.w + 6, 5);
+      ctx.fillStyle = '#e63246';
+      ctx.fillRect(e.x - 2, e.y - 8, (e.w + 4) * (e.hp / e.maxHp), 3);
+    }
   });
 
-  // Шарф и Пепельный Страж
-  ctx.strokeStyle = '#a82030';
+  // 7. ПЕПЕЛЬНЫЙ СТРАЖ (Шарф + Пиксельный Рыцарь + Динамический Меч)
+  ctx.strokeStyle = '#9e1e2e';
   ctx.lineWidth = 6;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  ctx.lineCap = 'square';
   ctx.beginPath();
   player.scarf.forEach((n, idx) => {
     if (idx === 0) ctx.moveTo(n.x, n.y);
@@ -1355,31 +1670,33 @@ function render() {
   ctx.save();
   if (player.invuln > 0 && Math.floor(now / 45) % 2 === 0) ctx.globalAlpha = 0.45;
 
-  const bob = player.grounded && Math.abs(player.vx) > 20 ? Math.sin(player.animTime * 18) * 2.5 : 0;
+  const isRunning = player.grounded && Math.abs(player.vx) > 25;
+  const runFrame = isRunning && Math.floor(player.animTime * 12) % 2 === 1;
+  const kSprite = runFrame ? KNIGHT_RUN : KNIGHT_IDLE;
 
-  ctx.fillStyle = '#252834';
-  ctx.fillRect(player.x + 4, player.y + 30, 7, 16);
-  ctx.fillRect(player.x + 15, player.y + 30, 7, 16);
+  ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+  ctx.scale(player.facing, 1);
+  ctx.drawImage(kSprite, -player.w / 2 - 4, -player.h / 2 - 2, player.w + 8, player.h + 4);
 
-  ctx.fillStyle = player.dashTimer > 0 ? '#f0dbb0' : '#7b8296';
-  ctx.fillRect(player.x + 2, player.y + 13 + bob, player.w - 4, 20);
+  // Отрисовка меча Рыцаря (меняет цвет от выбранных реликвий!)
+  ctx.save();
+  const swordAngle = player.atkTimer > 0 ? 0.85 : -0.35;
+  ctx.translate(8, 2);
+  ctx.rotate(swordAngle);
+  // Рукоять и гарда
+  ctx.fillStyle = '#c4a46c';
+  ctx.fillRect(-4, -2, 8, 4);
+  ctx.fillRect(2, -6, 3, 12);
+  // Лезвие
+  ctx.fillStyle = player.swordColor;
+  ctx.fillRect(5, -3, 24 + player.rangeBonus * 0.4, 5);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(5, -2, 22 + player.rangeBonus * 0.4, 2);
+  ctx.restore();
 
-  ctx.fillStyle = '#9aa2b8';
-  ctx.fillRect(player.x + 4, player.y + bob, player.w - 8, 14);
+  ctx.restore();
 
-  ctx.fillStyle = '#00f3ff';
-  const visorX = player.facing === 1 ? player.x + player.w - 10 : player.x + 4;
-  ctx.fillRect(visorX, player.y + 5 + bob, 6, 3);
-
-  ctx.strokeStyle = '#dce3f2';
-  ctx.lineWidth = 3.5;
-  ctx.beginPath();
-  const handX = player.x + player.w / 2 + player.facing * 8;
-  const handY = player.y + 22 + bob;
-  ctx.moveTo(handX, handY);
-  ctx.lineTo(handX + player.facing * 22, handY - 12);
-  ctx.stroke();
-
+  // Энергетический щит при парировании
   if (player.parryWindow > 0) {
     ctx.strokeStyle = '#6ab0e8';
     ctx.lineWidth = 4;
@@ -1387,16 +1704,16 @@ function render() {
     ctx.arc(player.x + player.w / 2, player.y + player.h / 2, 32, -Math.PI * 0.45, Math.PI * 0.45, player.facing < 0);
     ctx.stroke();
   }
-  ctx.restore();
 
-  // Дуги меча
+  // 8. Дуги рассечения мечом
   slashArcs.forEach(s => {
     ctx.save();
     ctx.translate(s.x, s.y);
     ctx.scale(s.dir, 1);
     const alpha = s.life / s.maxLife;
-    ctx.strokeStyle = s.step === 3 ? `rgba(255, 190, 66, ${alpha})` : `rgba(235, 245, 255, ${alpha})`;
-    ctx.lineWidth = s.step === 3 ? 14 : 9;
+    ctx.strokeStyle = s.color;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = s.step === 3 ? 15 : 9;
     ctx.beginPath();
     if (s.step === 2) {
       ctx.arc(0, 0, s.radius * 0.78, Math.PI * 0.65, -Math.PI * 0.55, true);
@@ -1407,33 +1724,41 @@ function render() {
     ctx.restore();
   });
 
-  // Электрические молнии реликвии
+  // 9. РАЗРЯДЫ ЦЕПНОЙ МОЛНИИ (Яркие ветвящиеся зигзаги!)
   lightningBolts.forEach(bolt => {
     ctx.save();
-    ctx.strokeStyle = '#6ab0e8';
-    ctx.lineWidth = 3.5;
-    ctx.shadowBlur = 12;
-    ctx.shadowColor = '#00f3ff';
+    const alpha = bolt.life / bolt.maxLife;
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = '#00f3ff';
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    bolt.points.forEach((pt, i) => {
-      if (i === 0) ctx.moveTo(pt.x, pt.y);
+    bolt.points.forEach((pt, idx) => {
+      if (idx === 0) ctx.moveTo(pt.x, pt.y);
       else ctx.lineTo(pt.x, pt.y);
     });
+    ctx.stroke();
+
+    // Белое раскалённое ядро молнии
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
     ctx.stroke();
     ctx.restore();
   });
 
+  // 10. Частицы и цифры урона
   particles.forEach(pt => {
     ctx.fillStyle = pt.color;
     ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
-    ctx.fillRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size);
+    ctx.fillRect(Math.floor(pt.x - pt.size / 2), Math.floor(pt.y - pt.size / 2), pt.size, pt.size);
   });
   ctx.globalAlpha = 1;
 
   floatTexts.forEach(ft => {
-    ctx.font = ft.big ? '900 17px sans-serif' : '700 13px sans-serif';
-    ctx.fillStyle = ft.color;
+    ctx.font = ft.big ? '900 17px sans-serif' : '800 13px sans-serif';
+    ctx.fillStyle = '#0a0b10';
     ctx.textAlign = 'center';
+    ctx.fillText(ft.text, ft.x + 1, ft.y + 1);
+    ctx.fillStyle = ft.color;
     ctx.fillText(ft.text, ft.x, ft.y);
   });
 
