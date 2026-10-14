@@ -1,4 +1,4 @@
-// src/game.js — Активный 6-суставный скелет, инерция, баланс, Ledge-Grab, интерактив и рендер
+// src/game.js — 14-суставная биомеханика, честная коллизия клинка, расчленёнка, кишки, занос и сальто
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -11,13 +11,14 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-const VIEW_H = 470;
+// Приближенная камера (VIEW_H = 390), чтобы все суставы, кисти, раны и стопы были крупными и чёткими!
+const VIEW_H = 390;
 const GRAVITY = 1520;
 let hitstopTimer = 0;
 const cam = { x: 0, y: 0, shake: 0 };
 
 // =====================================================
-// 1. ВВОД (ТАЧСКРИН + КЛАВИАТУРА)
+// 1. ВВОД
 // =====================================================
 const input = {
   x: 0, y: 0,
@@ -92,25 +93,26 @@ window.addEventListener('keyup', (e) => {
 });
 
 // =====================================================
-// 2. ИГРОК И ФИЗИЧЕСКИЙ СКЕЛЕТ (ACTIVE RAGDOLL / IK RIG)
+// 2. ИГРОК (КРУПНЫЙ 14-СУСТАВНЫЙ СКЕЛЕТ, САЛЬТО, ЗАНОС)
 // =====================================================
 const player = {
-  x: 120, y: 350, w: 28, h: 46,
+  x: 120, y: 350, w: 32, h: 64, // Крупный детализированный рост!
   vx: 0, vy: 0,
   facing: 1,
   grounded: false,
   coyoteTimer: 0,
   wallDir: 0,
-  ledgeGrab: null,      // Захват руками за край платформы { x, y, dir }
-  skidTimer: 0,         // Занос при резком развороте на скорости
-  offBalanceTimer: 0,   // Потеря равновесия при промахе тяжёлым мечом (Overswing)
-  knockdown: false,     // Сбит с ног тяжёлым ударом (можно выйти Tech-кувырком!)
+  ledgeGrab: null,      // { x, y, handX, handY, dir }
+  skidTimer: 0,         // Тормозной путь по инерции!
+  skidDir: 0,
+  offBalanceTimer: 0,   // Перевес тяжёлого оружия при промахе
+  knockdown: false,
   knockdownTimer: 0,
   noOverswing: false,
   weaponType: 'greatsword', // 'greatsword' | 'daggers' | 'hammer'
-  moveSpeed: 320,
+  moveSpeed: 310,
   hp: 100, maxHp: 100,
-  dmg: 26,
+  dmg: 28,
   critChance: 0.15,
   vampOnKill: 0,
   rangeBonus: 0,
@@ -122,7 +124,8 @@ const player = {
   comboStep: 0,
   comboWindow: 0,
   atkTimer: 0,
-  atkDuration: 0.25,
+  atkDuration: 0.28,
+  atkHitChecked: false, // Флаг момента удара клинком в середине замаха
   atkCd: 0,
   atkCdMax: 0.3,
   downSmash: false,
@@ -133,20 +136,21 @@ const player = {
   parryCd: 0,
   parryCdMax: 0.58,
   invuln: 0,
-  // Параметры процедурного скелета (IK Rig)
+  // Кинематика суставов
   stepPhase: 0,
   lastStepSign: 1,
-  torsoLean: 0,         // Наклон корпуса по инерции (рад)
-  squashY: 1.0,         // Пружина приземления / прыжка
-  rollAngle: 0,         // Вращение в кувырке 360
+  torsoLean: 0,
+  squashY: 1.0,
+  flipAngle: 0,         // Угол сальто при отскоке от стены или кувырке!
+  isWallFlipping: false,// Настоящее сальто назад с группировкой при Wall-Jump!
   scarf: []
 };
-for (let i = 0; i < 6; i++) player.scarf.push({ x: player.x, y: player.y });
+for (let i = 0; i < 7; i++) player.scarf.push({ x: player.x, y: player.y });
 
 window.resetScarf = function() {
   for (let i = 0; i < player.scarf.length; i++) {
-    player.scarf[i].x = player.x + player.w / 2 - player.facing * i * 4;
-    player.scarf[i].y = player.y + 12;
+    player.scarf[i].x = player.x + player.w / 2 - player.facing * i * 5;
+    player.scarf[i].y = player.y + 14;
   }
 };
 
@@ -155,14 +159,14 @@ function rectOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
 }
 
 // =====================================================
-// 3. БОЁВКА, ПЕРЕВЕС МЕЧА (OVERSWING) И ИНТЕРАКТИВНЫЕ ОБЪЕКТЫ
+// 3. ЧЕСТНАЯ БИОМЕХАНИЧЕСКАЯ БОЁВКА И РАСЧЛЕНЁНКА (GORE ENGINE)
 // =====================================================
-function performAttack() {
+function startAttackSwing() {
   if (!player.grounded && input.y > 0.4) {
     player.downSmash = true;
-    player.vy = 720;
-    player.atkTimer = 0.36;
-    player.atkDuration = 0.36;
+    player.vy = 730;
+    player.atkTimer = 0.38;
+    player.atkDuration = 0.38;
     player.atkCd = 0.45 * player.atkSpeedMult;
     player.atkCdMax = player.atkCd;
     sfx.slash(3);
@@ -176,66 +180,61 @@ function performAttack() {
   }
 
   const isFinisher = player.comboStep === 3;
-  const isHeavyWeapon = player.weaponType === 'hammer';
-  const isLightWeapon = player.weaponType === 'daggers';
+  const isHammer = player.weaponType === 'hammer';
+  const isDaggers = player.weaponType === 'daggers';
 
-  player.atkDuration = (isFinisher ? 0.32 : 0.20) * player.atkSpeedMult;
+  player.atkDuration = (isFinisher ? (isHammer ? 0.42 : 0.34) : (isDaggers ? 0.16 : 0.24)) * player.atkSpeedMult;
   player.atkTimer = player.atkDuration;
-  player.atkCd = (isFinisher ? 0.56 : (player.comboStep === 2 ? 0.30 : 0.26)) * player.atkSpeedMult;
+  player.atkHitChecked = false; // Сам урон нанесётся в фазе разгибания локтя (когда клинок летит в цель!)
+  player.atkCd = (isFinisher ? 0.58 : (player.comboStep === 2 ? 0.30 : 0.26)) * player.atkSpeedMult;
   player.atkCdMax = player.atkCd;
-  player.comboWindow = isFinisher ? 0 : 0.75;
+  player.comboWindow = isFinisher ? 0 : 0.78;
 
-  // Импульс выпада вперёд
-  const lunge = isFinisher ? (isHeavyWeapon ? 370 : 310) : 175;
+  const lunge = isFinisher ? (isHammer ? 350 : 290) : (isDaggers ? 210 : 165);
   player.vx = player.facing * lunge;
-  sfx.slash(player.comboStep, isLightWeapon ? 1.35 : (isHeavyWeapon ? 0.75 : 1.0));
+  sfx.slash(player.comboStep, isDaggers ? 1.4 : (isHammer ? 0.72 : 1.0));
+}
 
-  const reach = (isFinisher ? 84 : 66) + player.rangeBonus;
-  const hitX = player.facing === 1 ? player.x + player.w * 0.35 : player.x + player.w * 0.65 - reach;
-  const hitY = player.y - 14;
-  const hitW = reach;
-  const hitH = player.h + 24;
+// Вызывается в пиковой фазе удара (когда рука с оружием реально рассекает воздух перед собой)
+function executeWeaponImpact() {
+  player.atkHitChecked = true;
+  const isFinisher = player.comboStep === 3;
+  const isHammer = player.weaponType === 'hammer';
+  const isDaggers = player.weaponType === 'daggers';
 
-  WORLD.slashArcs.push({
-    x: player.x + player.w / 2,
-    y: player.y + player.h / 2,
-    dir: player.facing,
-    step: player.comboStep,
-    color: isFinisher ? '#ffbe42' : player.swordColor,
-    radius: reach,
-    life: 0.18,
-    maxLife: 0.18
-  });
-
+  const reach = (isHammer ? 76 : (isDaggers ? 48 : 70)) + (isFinisher ? 16 : 0) + player.rangeBonus;
   const pxCenter = player.x + player.w / 2;
   const pyCenter = player.y + player.h / 2;
+  const hitX = player.facing === 1 ? pxCenter : pxCenter - reach;
+  // Высота удара зависит от шага комбо: 1 — в живот/грудь, 2 — снизу вверх в голову, 3 — сверху вниз!
+  const hitY = player.y + (player.comboStep === 1 ? 18 : (player.comboStep === 2 ? -4 : 6));
+  const hitW = reach;
+  const hitH = player.h - 6;
+
   let hitAnything = false;
 
-  // 1. Толчок висячих цепей взмахом меча
+  // 1. Звон цепей от удара клинком
   WORLD.chains.forEach(ch => {
     ch.nodes.forEach(n => {
       if (Math.hypot(n.x - pxCenter, n.y - pyCenter) < reach + 15) {
-        n.vx += player.facing * 240;
+        n.vx += player.facing * 260;
         sfx.chainClink();
       }
     });
   });
 
-  // 2. Разрубание цепей подвесных люстр!
+  // 2. Перерубание цепей люстр
   WORLD.chandeliers.forEach(c => {
-    if (c.state === 'hanging') {
-      if (Math.abs(c.x - (pxCenter + player.facing * 30)) < 55 && pyCenter < c.y + 45) {
-        c.state = 'falling';
-        c.vy = 60;
-        hitAnything = true;
-        sfx.parryClang();
-        spawnParticles(c.x, c.y - 20, '#ffbe42', 14, 220);
-        addFloatText(c.x, c.y - 25, 'ЦЕПЬ ПЕРЕРУБЛЕНА!', '#ffbe42', true);
-      }
+    if (c.state === 'hanging' && Math.abs(c.x - (pxCenter + player.facing * 32)) < 58 && pyCenter < c.y + 52) {
+      c.state = 'falling'; c.vy = 60;
+      hitAnything = true;
+      sfx.parryClang();
+      spawnParticles(c.x, c.y - 20, '#ffbe42', 14, 220);
+      addFloatText(c.x, c.y - 25, 'ЦЕПЬ ПЕРЕРУБЛЕНА!', '#ffbe42', true);
     }
   });
 
-  // 3. Разрушение деревянных бочек
+  // 3. Разрушение бочек
   for (let i = WORLD.barrels.length - 1; i >= 0; i--) {
     const b = WORLD.barrels[i];
     if (rectOverlap(hitX, hitY, hitW, hitH, b.x, b.y, b.w, b.h)) {
@@ -244,21 +243,70 @@ function performAttack() {
     }
   }
 
-  // 4. Попадание по врагам
+  // 4. АНАТОМИЧЕСКОЕ ПОПАДАНИЕ ПО ВРАГАМ (РАНЫ, КИШКИ, ПЕРЕЛОМЫ НОГ, ОТРУБАНИЕ)
   WORLD.enemies.forEach(e => {
     const exCenter = e.x + e.w / 2, eyCenter = e.y + e.h / 2;
     if (rectOverlap(hitX, hitY, hitW, hitH, e.x, e.y, e.w, e.h) &&
         hasLineOfSight(pxCenter, pyCenter, exCenter, eyCenter)) {
       hitAnything = true;
-      const stunnedBonus = e.state === 'stunned' ? 1.8 : 1.0;
+      const stunnedBonus = (e.state === 'stunned' || e.legBroken) ? 1.6 : 1.0;
       const isCrit = isFinisher || e.state === 'stunned' || Math.random() < player.critChance;
-      const dmg = Math.round(player.dmg * (isFinisher ? 1.5 : 1.0) * (isCrit ? 1.7 : 1.0) * stunnedBonus);
-      damageEnemy(e, dmg, player.facing * (isFinisher ? 340 : 195), isCrit);
+      const dmg = Math.round(player.dmg * (isFinisher ? 1.5 : 1.0) * (isCrit ? 1.65 : 1.0) * stunnedBonus);
 
-      if (isHeavyWeapon && isFinisher) {
-        e.state = 'stunned';
-        e.timer = 1.4;
+      // Локальная точка раны на теле врага
+      const relX = (Math.random() - 0.5) * (e.w * 0.45);
+      const relY = player.comboStep === 1 ? 6 : (player.comboStep === 2 ? -10 : 12);
+      if (e.wounds.length < 6) {
+        e.wounds.push({ rx: relX, ry: relY, type: isHammer ? 'crush' : 'cut' });
       }
+
+      // ЭФФЕКТЫ ПО ТИПУ ОРУЖИЯ:
+      if (isHammer) {
+        // МОЛОТ: Дробит ноги, выбивает оружие и швыряет врагов через зал!
+        const knockForce = isFinisher ? 560 : 340;
+        applyAnatomyDamage(e, dmg, player.facing * knockForce, isCrit, 'hammer');
+
+        // Перелом ноги (враг падает и ползёт!)
+        if (!e.legBroken && e.type !== 'wraith' && e.type !== 'boss' && (isFinisher || e.hp < e.maxHp * 0.6)) {
+          e.legBroken = true;
+          sfx.boneSnap();
+          addFloatText(exCenter, e.y - 22, 'ПЕРЕЛОМ НОГИ!', '#ff9d2e', true);
+          // Оторванная голень отлетает в сторону
+          WORLD.corpses.push({
+            x: exCenter, y: e.y + e.h - 10,
+            vx: player.facing * 260, vy: -190,
+            rot: 0, vrot: 12,
+            kind: 'leg', color: '#ede0c8'
+          });
+        }
+        // Выбивание оружия из рук врага!
+        if (!e.disarmed && e.type !== 'wraith' && e.type !== 'boss' && Math.random() < 0.55) {
+          e.disarmed = true;
+          sfx.parryClang();
+          addFloatText(exCenter, e.y - 36, 'ОРУЖИЕ ВЫБИТО!', '#ffd269', false);
+          WORLD.droppedWeapons.push({
+            x: exCenter, y: eyCenter,
+            vx: player.facing * (180 + Math.random() * 140),
+            vy: -260,
+            rot: 0,
+            ownerType: e.type
+          });
+        }
+      } else if (isDaggers) {
+        // КИНЖАЛЫ: Вспарывают живот, выпускают кишки и вешают кровотечение!
+        applyAnatomyDamage(e, dmg, player.facing * 140, isCrit, 'daggers');
+        e.bleedTimer = 3.5;
+        if (!e.gutsSpilled && e.type !== 'wraith' && (isCrit || e.hp < e.maxHp * 0.55)) {
+          spillEnemyGuts(e);
+        }
+      } else {
+        // МЕЧ (КЛЕЙМОР): Рассекает плоть, вспарывает живот и РАЗРУБАЕТ ПОПОЛАМ при добивании!
+        applyAnatomyDamage(e, dmg, player.facing * (isFinisher ? 340 : 210), isCrit, 'greatsword');
+        if (!e.gutsSpilled && e.type !== 'wraith' && player.comboStep === 1 && e.hp < e.maxHp * 0.5) {
+          spillEnemyGuts(e);
+        }
+      }
+
       if ((isFinisher || e.state === 'stunned') && player.chainLightning) {
         triggerChainLightning(e, Math.round(dmg * 0.65));
       }
@@ -266,72 +314,84 @@ function performAttack() {
   });
 
   if (hitAnything) {
-    // Импульс меча погашен о врага — идеальный баланс!
-    hitstopTimer = isFinisher ? 0.068 : 0.035;
-    cam.shake = isFinisher ? 9.5 : 4.5;
-    if (navigator.vibrate) navigator.vibrate(isFinisher ? 35 : 15);
-  } else if (isFinisher && !isLightWeapon && !player.noOverswing && player.grounded) {
-    // ПРОМАХ ТЯЖЁЛЫМ ФИНАЛЬНЫМ УДАРОМ В ПУСТОТУ -> МЕЧ ПЕРЕВЕШИВАЕТ И ТЯНЕТ ЗА СОБОЙ!
-    player.offBalanceTimer = isHeavyWeapon ? 0.55 : 0.40;
-    player.vx = player.facing * (isHeavyWeapon ? 430 : 350);
+    hitstopTimer = isFinisher ? 0.07 : 0.035;
+    cam.shake = isFinisher ? 10 : 4.5;
+    if (navigator.vibrate) navigator.vibrate(isFinisher ? 40 : 16);
+  } else if (isFinisher && !isDaggers && !player.noOverswing && player.grounded) {
+    // ПРОМАХ ТЯЖЁЛЫМ УДАРОМ -> МЕЧ ИЛИ МОЛОТ ТЯНЕТ ЗА СОБОЙ И ВАЛИТ НА КОЛЕНО!
+    player.offBalanceTimer = isHammer ? 0.60 : 0.42;
+    player.vx = player.facing * (isHammer ? 420 : 340);
     player.atkCd = 0.72;
     player.atkCdMax = 0.72;
     cam.shake = 5;
-    spawnParticles(player.x + player.w / 2, player.y + player.h, '#9296a0', 9, 150, 300);
-    addFloatText(player.x + player.w / 2, player.y - 16, 'ПЕРЕВЕС МЕЧА!', '#ffae38', false);
+    spawnParticles(pxCenter, player.y + player.h, '#9296a0', 9, 150, 300);
+    addFloatText(pxCenter, player.y - 18, 'ПЕРЕВЕС ОРУЖИЯ!', '#ffae38', false);
   }
 }
 
-function breakBarrel(idx) {
-  const b = WORLD.barrels[idx];
-  sfx.woodBreak();
-  spawnParticles(b.x + 12, b.y + 14, '#825836', 16, 260);
-  spawnParticles(b.x + 12, b.y + 14, '#4a5162', 6, 180);
-  // Выпадение сфер HP или Пепла
-  const isHeal = Math.random() < 0.45;
-  WORLD.lootOrbs.push({
-    x: b.x + 12, y: b.y + 10,
-    vx: (Math.random() - 0.5) * 140,
-    vy: -220,
-    type: isHeal ? 'hp' : 'soul',
-    val: isHeal ? 18 : 15
-  });
-  WORLD.barrels.splice(idx, 1);
+function spillEnemyGuts(e) {
+  e.gutsSpilled = true;
+  e.gutNodes = [];
+  for (let i = 0; i < 5; i++) {
+    e.gutNodes.push({ x: e.x + e.w / 2, y: e.y + e.h * 0.55 + i * 5, vx: (Math.random() - 0.5) * 90 });
+  }
+  spawnParticles(e.x + e.w / 2, e.y + e.h * 0.55, '#d46a7e', 14, 210);
+  addFloatText(e.x + e.w / 2, e.y - 20, 'ВСПОРОТ ЖИВОТ!', '#e03448', true);
 }
 
-function triggerChainLightning(sourceEnemy, boltDmg) {
-  const sx = sourceEnemy.x + sourceEnemy.w / 2;
-  const sy = sourceEnemy.y + sourceEnemy.h / 2;
-  spawnLightningBolt(player.x + player.w / 2, player.y + 20, sx, sy);
-  WORLD.enemies.forEach(other => {
-    if (other !== sourceEnemy && other.hp > 0) {
-      const ox = other.x + other.w / 2, oy = other.y + other.h / 2;
-      if (Math.hypot(ox - sx, oy - sy) < 260) {
-        spawnLightningBolt(sx, sy, ox, oy);
-        damageEnemy(other, boltDmg, Math.sign(ox - sx) * 180, false, '#00f3ff');
-      }
-    }
-  });
-}
-
-function damageEnemy(e, dmg, knockVx, isCrit, customColor = null) {
+function applyAnatomyDamage(e, dmg, knockVx, isCrit, weaponKind) {
   e.hp -= dmg;
   e.vx = e.type === 'boss' ? knockVx * 0.35 : knockVx;
-  e.vy = e.type === 'boss' ? -60 : -130;
-  e.flashTimer = 0.12;
-  if (e.state !== 'stunned' && e.type !== 'boss' && (e.type !== 'warden' || isCrit)) {
+  e.vy = weaponKind === 'hammer' ? -220 : (e.type === 'boss' ? -50 : -125);
+  e.flashTimer = 0.11;
+  if (e.state !== 'stunned' && e.type !== 'boss') {
     e.state = 'stagger';
-    e.timer = 0.25;
+    e.timer = weaponKind === 'hammer' ? 0.42 : 0.25;
   }
-  sfx.hit(isCrit);
-  spawnParticles(e.x + e.w / 2, e.y + e.h / 2, customColor || (isCrit ? '#ffbe42' : '#d93848'), isCrit ? 16 : 9, 260);
-  addFloatText(e.x + e.w / 2, e.y - 8, isCrit ? `${dmg}!` : `${dmg}`, customColor || (isCrit ? '#ffbe42' : '#f5efe6'), isCrit);
 
-  if (WORLD.bloodStains.length < 65) {
-    WORLD.bloodStains.push({ x: e.x + Math.random() * e.w, y: WORLD.FLOOR_Y, w: 6 + Math.random() * 12 });
+  sfx.goreHit(weaponKind === 'hammer' || isCrit);
+  spawnParticles(e.x + e.w / 2, e.y + e.h / 2, '#e03448', isCrit ? 18 : 10, 270);
+  addFloatText(e.x + e.w / 2, e.y - 8, isCrit ? `${dmg}!` : `${dmg}`, isCrit ? '#ffbe42' : '#f5efe6', isCrit);
+
+  if (WORLD.bloodStains.length < 75) {
+    WORLD.bloodStains.push({ x: e.x + Math.random() * e.w, y: WORLD.FLOOR_Y, w: 8 + Math.random() * 14 });
   }
+
+  // СМЕРТЬ ВРАГА -> ФАТАЛЬНАЯ РАСЧЛЕНЁНКА ПО ТИПУ ОРУЖИЯ!
   if (e.hp <= 0) {
-    spawnParticles(e.x + e.w / 2, e.y + e.h / 2, '#9e1b28', e.type === 'boss' ? 45 : 24, 340);
+    const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
+    const dir = Math.sign(knockVx) || player.facing;
+    spawnParticles(cx, cy, '#9e1b28', 28, 340);
+
+    if (weaponKind === 'greatsword' || weaponKind === 'daggers') {
+      // МЕЧ / КИНЖАЛЫ -> РАЗРУБАНИЕ ТЕЛА ПОПОЛАМ (Верхняя половина и таз с ногами разлетаются!)
+      addFloatText(cx, e.y - 24, 'РАЗРУБЛЕН ПОПОЛАМ!', '#ff2a4b', true);
+      WORLD.corpses.push({
+        x: cx, y: e.y + 16,
+        vx: dir * (240 + Math.random() * 120), vy: -290,
+        rot: 0, vrot: dir * 11,
+        kind: 'upperBody', enemyType: e.type
+      });
+      WORLD.corpses.push({
+        x: cx, y: e.y + e.h - 16,
+        vx: -dir * 90, vy: -110,
+        rot: 0, vrot: -dir * 5,
+        kind: 'lowerLegs', enemyType: e.type
+      });
+    } else if (weaponKind === 'hammer') {
+      // МОЛОТ -> РАЗМОЗЖЕНИЕ В КАШУ ИЗ КОСТЕЙ И ОСКОЛКОВ БРОНИ!
+      sfx.boneSnap();
+      addFloatText(cx, e.y - 24, 'РАЗМОЗЖЁН!', '#ff9d2e', true);
+      spawnParticles(cx, cy, '#ede0c8', 20, 380);
+      spawnParticles(cx, cy, '#d46a7e', 18, 320);
+      WORLD.corpses.push({
+        x: cx, y: e.y + 10,
+        vx: dir * 420, vy: -340,
+        rot: 0, vrot: dir * 18,
+        kind: 'skull', enemyType: e.type
+      });
+    }
+
     player.souls += e.type === 'boss' ? 120 : (e.type === 'warden' ? 25 : 12);
     if (player.vampOnKill > 0) {
       player.hp = Math.min(player.maxHp, player.hp + player.vampOnKill);
@@ -340,7 +400,34 @@ function damageEnemy(e, dmg, knockVx, isCrit, customColor = null) {
   }
 }
 
-// Модалка Алтаря
+function breakBarrel(idx) {
+  const b = WORLD.barrels[idx];
+  sfx.woodBreak();
+  spawnParticles(b.x + 12, b.y + 14, '#825836', 16, 260);
+  const isHeal = Math.random() < 0.45;
+  WORLD.lootOrbs.push({
+    x: b.x + 12, y: b.y + 10,
+    vx: (Math.random() - 0.5) * 140, vy: -220,
+    type: isHeal ? 'hp' : 'soul',
+    val: isHeal ? 20 : 15
+  });
+  WORLD.barrels.splice(idx, 1);
+}
+
+function triggerChainLightning(sourceEnemy, boltDmg) {
+  const sx = sourceEnemy.x + sourceEnemy.w / 2, sy = sourceEnemy.y + sourceEnemy.h / 2;
+  spawnLightningBolt(player.x + player.w / 2, player.y + 24, sx, sy);
+  WORLD.enemies.forEach(other => {
+    if (other !== sourceEnemy && other.hp > 0) {
+      const ox = other.x + other.w / 2, oy = other.y + other.h / 2;
+      if (Math.hypot(ox - sx, oy - sy) < 260) {
+        spawnLightningBolt(sx, sy, ox, oy);
+        applyAnatomyDamage(other, boltDmg, Math.sign(ox - sx) * 180, false, 'greatsword');
+      }
+    }
+  });
+}
+
 const relicModal = document.getElementById('relic-modal');
 const cardsContainer = document.getElementById('cards-container');
 let pausedForModal = false;
@@ -368,7 +455,7 @@ function openRelicModal() {
 }
 
 // =====================================================
-// 4. ГЛАВНЫЙ ФИЗИЧЕСКИЙ ЦИКЛ (СКЕЛЕТ, ЗАНОС, LEDGE-GRAB, РЭГДОЛЛ)
+// 4. ФИЗИКА ДВИЖЕНИЯ: НАСТОЯЩИЙ ТОРМОЗНОЙ ПУТЬ, САЛЬТО И LEDGE-GRAB
 // =====================================================
 function update(dt) {
   if (pausedForModal) return;
@@ -376,7 +463,6 @@ function update(dt) {
 
   if (input.jumpBuffer > 0) input.jumpBuffer -= dt;
   if (player.coyoteTimer > 0) player.coyoteTimer -= dt;
-  if (player.atkTimer > 0) player.atkTimer -= dt;
   if (player.atkCd > 0) player.atkCd -= dt;
   if (player.comboWindow > 0) {
     player.comboWindow -= dt;
@@ -390,23 +476,33 @@ function update(dt) {
   if (player.skidTimer > 0) player.skidTimer -= dt;
   if (player.offBalanceTimer > 0) player.offBalanceTimer -= dt;
 
-  // Возврат упругой пружины корпуса (Squash & Stretch) к 1.0
+  // Таймер удара и проверка момента столкновения клинка с врагом (в середине взмаха!)
+  if (player.atkTimer > 0) {
+    player.atkTimer -= dt;
+    const progress = 1 - (player.atkTimer / player.atkDuration);
+    if (!player.atkHitChecked && !player.downSmash && progress >= 0.42) {
+      executeWeaponImpact();
+    }
+  }
+
   player.squashY += (1.0 - player.squashY) * Math.min(1, dt * 16);
 
-  // А) ЕСЛИ ГЕРОЙ ВИСИТ НА КРАЮ УСТУПА (LEDGE GRAB)
+  // А) ВИС НА УСТУПЕ (LEDGE GRAB) — РУКИ ЧЁТКО ЛЕЖАТ НА УГЛУ КАМНЯ!
   if (player.ledgeGrab) {
     player.vx = 0; player.vy = 0;
     player.x = player.ledgeGrab.x;
     player.y = player.ledgeGrab.y;
+    player.isWallFlipping = false;
     if (input.jumpBuffer > 0 || input.y < -0.4) {
-      // Взрывной подъём с кувырком наверх плиты!
-      player.vy = -520;
-      player.vx = player.ledgeGrab.dir * 220;
-      player.dashTimer = 0.14;
+      // Мощный подъём с сальто на платформу!
+      player.vy = -540;
+      player.vx = player.ledgeGrab.dir * 210;
+      player.isWallFlipping = true;
+      player.flipAngle = 0;
       player.ledgeGrab = null;
       input.jumpBuffer = 0;
       sfx.jump();
-    } else if (input.y > 0.5 || input.dashPressed) {
+    } else if (input.y > 0.45 || input.dashPressed) {
       player.ledgeGrab = null;
       input.dashPressed = false;
     }
@@ -414,27 +510,27 @@ function update(dt) {
     return;
   }
 
-  // Б) ЕСЛИ ГЕРОЙ СБИТ С НОГ ТЯЖЁЛЫМ УДАРОМ (KNOCKDOWN + TECH ROLL)
+  // Б) СБИТ С НОГ + СКИЛЛОВЫЙ ТЕХ-КУВЫРОК
   if (player.knockdown) {
     player.knockdownTimer -= dt;
-    // Скилловый выход из падения (Tech Roll) по кнопке РЫВКА!
     if (input.dashPressed && player.dashCd <= 0) {
       input.dashPressed = false;
       player.knockdown = false;
-      player.dashTimer = 0.22;
+      player.dashTimer = 0.24;
       player.dashCd = player.dashCdMax * 0.5;
       player.invuln = 0.35;
-      player.vy = -180;
+      player.vy = -190;
       player.vx = player.facing * 520;
+      player.flipAngle = 0;
       sfx.dash();
       addFloatText(player.x + player.w / 2, player.y - 18, 'ТЕХ-КУВЫРОК!', '#00f3ff', true);
     } else if (player.knockdownTimer <= 0 && player.grounded) {
       player.knockdown = false;
-      player.squashY = 0.75;
+      player.squashY = 0.72;
     }
   }
 
-  // 1. Парирование щитом
+  // 1. Парирование
   if (input.parryPressed && player.parryCd <= 0 && player.dashTimer <= 0 && !player.knockdown && player.offBalanceTimer <= 0) {
     player.parryWindow = 0.28;
     player.parryCd = player.parryCdMax;
@@ -443,120 +539,145 @@ function update(dt) {
   }
   input.parryPressed = false;
 
-  // 2. Рывок / Боевое сальто (может отменить потерю равновесия!)
+  // 2. Рывок / Акробатический кувырок
   if (input.dashPressed && player.dashCd <= 0 && player.dashTimer <= 0 && !player.knockdown) {
-    player.dashTimer = 0.20;
+    player.dashTimer = 0.22;
     player.dashCd = player.dashCdMax;
-    player.invuln = 0.26;
+    player.invuln = 0.28;
     player.offBalanceTimer = 0;
+    player.skidTimer = 0;
     player.downSmash = false;
-    player.rollAngle = 0;
+    player.flipAngle = 0;
     if (input.x !== 0) player.facing = Math.sign(input.x);
-    player.vx = player.facing * 690;
+    player.vx = player.facing * 680;
     player.vy = 0;
     sfx.dash();
     spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#c4a46c', 10, 160, 0);
   }
   input.dashPressed = false;
 
-  // Разбивание бочек кувырком на скорости!
   if (player.dashTimer > 0) {
-    player.rollAngle += dt * 32;
+    player.flipAngle += dt * 29;
     for (let i = WORLD.barrels.length - 1; i >= 0; i--) {
       const b = WORLD.barrels[i];
-      if (rectOverlap(player.x, player.y, player.w, player.h, b.x, b.y, b.w, b.h)) {
-        breakBarrel(i);
-      }
+      if (rectOverlap(player.x, player.y, player.w, player.h, b.x, b.y, b.w, b.h)) breakBarrel(i);
     }
   }
 
-  // 3. Атака мечом
+  // Вращение в воздухе при сальто от стены!
+  if (player.isWallFlipping) {
+    player.flipAngle += dt * 19;
+    if (player.flipAngle >= Math.PI * 2 || player.grounded) {
+      player.isWallFlipping = false;
+      player.flipAngle = 0;
+    }
+  }
+
+  // 3. Атака
   if (input.atkPressed && player.atkCd <= 0 && player.dashTimer <= 0 && !player.knockdown && player.offBalanceTimer <= 0) {
-    performAttack();
+    startAttackSwing();
   }
   input.atkPressed = false;
 
-  // 4. Движение с ИНЕРЦИЕЙ, НАКЛОНОМ КОРПУСА и ТОРМОЗНЫМ ЗАНОСОМ (TURN-SKID)
+  // 4. ФИЗИКА РАЗГОНА И НАСТОЯЩЕГО ТОРМОЗНОГО ПУТИ (SKID SLIDE)!
   if (player.dashTimer <= 0 && player.atkTimer <= 0 && player.parryWindow <= 0 && !player.knockdown && player.offBalanceTimer <= 0) {
-    if (input.x !== 0) {
-      const desiredDir = Math.sign(input.x);
-      // Если бежали на полной скорости и резко дёрнули стик в обратную сторону -> ЗАНОС (Skid)!
-      if (player.grounded && Math.abs(player.vx) > 210 && desiredDir !== Math.sign(player.vx) && player.skidTimer <= 0) {
-        player.skidTimer = 0.14;
-        sfx.step();
-        spawnParticles(player.x + player.w / 2, player.y + player.h, '#c4a46c', 8, 130, 250);
+    if (player.skidTimer > 0) {
+      // ВО ВРЕМЯ ЗАНОСА РЫЦАРЬ СКОЛЬЗИТ ПО ИНЕРЦИИ В СТАРУЮ СТОРОНУ, ТОРМОЗЯ ПОДОШВАМИ О КАМЕНЬ!
+      player.vx *= Math.pow(0.015, dt); // плавное гашение инерции на 30-40px пути
+      if (Math.random() < 0.65) {
+        spawnParticles(player.x + player.w / 2 + player.skidDir * 10, player.y + player.h, '#ffbe42', 2, 95, 260);
+        spawnParticles(player.x + player.w / 2, player.y + player.h, '#9296a0', 2, 70, 180);
       }
-      player.facing = desiredDir;
-      const accel = player.grounded ? (player.skidTimer > 0 ? 11 : 16) : 12;
-      const targetVx = input.x * player.moveSpeed;
-      player.vx += (targetVx - player.vx) * Math.min(1, dt * accel);
+      if (Math.abs(player.vx) < 45 || player.skidTimer <= 0.02) {
+        player.skidTimer = 0;
+        player.facing = -player.skidDir;
+        player.vx = player.facing * 90; // взрывной старт в новую сторону после остановки!
+      }
+    } else if (input.x !== 0) {
+      const desiredDir = Math.sign(input.x);
+      // Если разогнались > 215 и резко тянем стик назад -> НАЧИНАЕМ ТОРМОЗНОЙ ЗАНОС!
+      if (player.grounded && Math.abs(player.vx) > 215 && desiredDir !== Math.sign(player.vx)) {
+        player.skidTimer = 0.24;
+        player.skidDir = Math.sign(player.vx); // продолжаем ехать туда, куда несла инерция!
+        sfx.step();
+      } else {
+        player.facing = desiredDir;
+        const accel = player.grounded ? 820 : 620;
+        const targetVx = input.x * player.moveSpeed;
+        if (player.vx < targetVx) player.vx = Math.min(targetVx, player.vx + accel * dt);
+        else if (player.vx > targetVx) player.vx = Math.max(targetVx, player.vx - accel * dt);
+      }
     } else {
-      player.vx *= Math.pow(player.grounded ? 0.0008 : 0.02, dt);
+      // Естественное трение при остановке
+      const decel = player.grounded ? 1150 : 300;
+      if (Math.abs(player.vx) <= decel * dt) player.vx = 0;
+      else player.vx -= Math.sign(player.vx) * decel * dt;
     }
   } else if ((player.atkTimer > 0 && !player.downSmash) || player.offBalanceTimer > 0 || player.knockdown) {
     player.vx *= Math.pow(0.03, dt);
   }
 
-  // Вычисление процедурного наклона торса и фазы шага ног
+  // Наклон корпуса от ускорения и заноса
   if (player.offBalanceTimer > 0) {
-    // Меч перевесил — корпус сильно завален вперёд!
-    player.torsoLean += (player.facing * 0.58 - player.torsoLean) * dt * 18;
+    player.torsoLean += (0.58 - player.torsoLean) * dt * 18;
   } else if (player.skidTimer > 0) {
-    // Занос при торможении — корпус откинут назад!
-    player.torsoLean += (-player.facing * 0.38 - player.torsoLean) * dt * 20;
+    player.torsoLean += (-0.42 - player.torsoLean) * dt * 22;
   } else {
-    const targetLean = (player.vx / player.moveSpeed) * 0.24;
+    const targetLean = (Math.abs(player.vx) / player.moveSpeed) * 0.22;
     player.torsoLean += (targetLean - player.torsoLean) * Math.min(1, dt * 14);
   }
 
-  if (player.grounded && Math.abs(player.vx) > 25) {
-    player.stepPhase += Math.abs(player.vx) * dt * 0.055;
+  // Фаза шага бедер и коленей
+  if (player.grounded && Math.abs(player.vx) > 20 && player.skidTimer <= 0) {
+    player.stepPhase += Math.abs(player.vx) * dt * 0.052;
     const curSign = Math.sin(player.stepPhase) >= 0 ? 1 : -1;
     if (curSign !== player.lastStepSign) {
       player.lastStepSign = curSign;
       sfx.step();
       spawnParticles(player.x + player.w / 2, player.y + player.h, '#5c6478', 2, 55, 180);
     }
-  } else {
-    player.stepPhase = 0;
   }
 
-  // 5. Гравитация и скольжение по стенам
+  // 5. Гравитация и Wall-Slide
   if (player.dashTimer <= 0) {
     let g = GRAVITY;
     if (player.vy < 0 && !input.jumpHeld) g *= 2.3;
     if (player.vy > 0) g *= 1.22;
     player.vy = Math.min(920, player.vy + g * dt);
 
-    if (player.wallDir !== 0 && !player.grounded && player.vy > 100 && Math.sign(input.x) === player.wallDir) {
-      player.vy = 100;
-      if (Math.random() < 0.35) spawnParticles(player.x + (player.wallDir > 0 ? player.w : 0), player.y + 18, '#7b849b', 1, 40, 120);
+    if (player.wallDir !== 0 && !player.grounded && player.vy > 95 && Math.sign(input.x) === player.wallDir) {
+      player.vy = 95;
+      player.isWallFlipping = false;
+      if (Math.random() < 0.4) spawnParticles(player.x + (player.wallDir > 0 ? player.w : 0), player.y + 24, '#7b849b', 1, 40, 120);
     }
   }
 
-  // 6. Прыжок и Wall-Jump с деформацией Squash & Stretch
+  // 6. Прыжок + САЛЬТО С ГРУППИРОВКОЙ ПРИ ОТСКОКЕ ОТ СТЕНЫ!
   if (input.jumpBuffer > 0 && !player.knockdown && player.offBalanceTimer <= 0) {
     if (player.coyoteTimer > 0) {
-      player.vy = -565;
+      player.vy = -575;
       player.grounded = false;
       player.coyoteTimer = 0;
+      player.skidTimer = 0;
       input.jumpBuffer = 0;
-      player.squashY = 1.28; // Вытягивание вверх на взлёте!
+      player.squashY = 1.24;
       sfx.jump();
       spawnParticles(player.x + player.w / 2, player.y + player.h, '#9296a0', 8, 130, 200);
     } else if (player.wallDir !== 0 && !player.grounded) {
-      player.vy = -535;
-      player.vx = -player.wallDir * 420;
+      // ОТСКОК ОТ СТЕНЫ С ЗАКРУТКОЙ В САЛЬТО НАЗАД!
+      player.vy = -555;
+      player.vx = -player.wallDir * 410;
       player.facing = -player.wallDir;
       player.wallDir = 0;
+      player.isWallFlipping = true;
+      player.flipAngle = 0;
       input.jumpBuffer = 0;
-      player.squashY = 1.25;
       sfx.jump();
-      spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#c4a46c', 10, 160, 200);
+      spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#c4a46c', 12, 180, 200);
     }
   }
 
-  // 7. Горизонтальная коллизия + АВТО-ЗАХВАТ РУКАМИ ЗА КРАЯ ПЛАТФОРМ (LEDGE GRAB)
+  // 7. Горизонтальная коллизия + ЧЁТКИЙ ЗАХВАТ РУКАМИ ЗА УСТУП (LEDGE GRAB)
   player.x += player.vx * dt;
   player.wallDir = 0;
   for (const p of WORLD.platforms) {
@@ -570,20 +691,18 @@ function update(dt) {
           player.wallDir = -1;
         }
         player.vx = 0;
+        player.skidTimer = 0;
       }
     }
-    // Проверка захвата руками за верхний угол стены или высокой платформы!
-    if (!player.grounded && player.vy > -80 && !player.knockdown && p.type !== 'floor') {
-      const headY = player.y + 8;
-      if (Math.abs(headY - p.y) < 16) {
-        // Левый край плиты (смотрим вправо)
-        if (player.facing === 1 && input.x > 0 && Math.abs((player.x + player.w) - p.x) < 14) {
-          player.ledgeGrab = { x: p.x - player.w + 2, y: p.y - 4, dir: 1 };
+    // Авто-захват за край любой платформы или колонны, когда голова/плечи поравнялись с углом!
+    if (!player.grounded && player.vy > -100 && !player.knockdown && p.type !== 'floor') {
+      const shoulderY = player.y + 14;
+      if (Math.abs(shoulderY - p.y) < 22) {
+        if (player.facing === 1 && Math.abs((player.x + player.w) - p.x) < 18) {
+          player.ledgeGrab = { x: p.x - player.w + 2, y: p.y - 6, cornerX: p.x, cornerY: p.y, dir: 1 };
           sfx.step();
-        }
-        // Правый край плиты (смотрим влево)
-        else if (player.facing === -1 && input.x < 0 && Math.abs(player.x - (p.x + p.w)) < 14) {
-          player.ledgeGrab = { x: p.x + p.w - 2, y: p.y - 4, dir: -1 };
+        } else if (player.facing === -1 && Math.abs(player.x - (p.x + p.w)) < 18) {
+          player.ledgeGrab = { x: p.x + p.w - 2, y: p.y - 6, cornerX: p.x + p.w, cornerY: p.y, dir: -1 };
           sfx.step();
         }
       }
@@ -598,7 +717,7 @@ function update(dt) {
 
   for (const p of WORLD.platforms) {
     if (p.type === 'plat') {
-      if (player.vy >= 0 && prevBottom <= p.y + 14 && !(input.y > 0.55) &&
+      if (player.vy >= 0 && prevBottom <= p.y + 15 && !(input.y > 0.55) &&
           player.x + player.w > p.x + 2 && player.x < p.x + p.w - 2 &&
           player.y + player.h >= p.y && player.y + player.h <= p.y + 28) {
         landOn(p.y, impactVy);
@@ -625,9 +744,10 @@ function update(dt) {
 
   function landOn(surfaceY, vyBefore) {
     player.y = surfaceY - player.h;
+    player.isWallFlipping = false;
+    player.flipAngle = 0;
     if (vyBefore > 220) {
-      // Упругий присед в коленях при приземлении!
-      player.squashY = Math.max(0.68, 1.0 - (vyBefore / 1600));
+      player.squashY = Math.max(0.7, 1.0 - (vyBefore / 1600));
       sfx.step();
       spawnParticles(player.x + player.w / 2, surfaceY, '#7b849b', 6, 110, 220);
     }
@@ -635,12 +755,12 @@ function update(dt) {
       player.downSmash = false;
       player.squashY = 0.62;
       cam.shake = 12;
-      sfx.hit(true);
+      sfx.goreHit(true);
       spawnParticles(player.x + player.w / 2, surfaceY, '#e05364', 26, 350);
       WORLD.enemies.forEach(e => {
-        if (Math.abs((e.x + e.w / 2) - (player.x + player.w / 2)) < 150 && Math.abs((e.y + e.h) - surfaceY) < 65 &&
+        if (Math.abs((e.x + e.w / 2) - (player.x + player.w / 2)) < 155 && Math.abs((e.y + e.h) - surfaceY) < 65 &&
             hasLineOfSight(player.x + player.w / 2, player.y + 20, e.x + e.w / 2, e.y + 20)) {
-          damageEnemy(e, Math.round(player.dmg * 1.65), Math.sign(e.x - player.x) * 340, true);
+          applyAnatomyDamage(e, Math.round(player.dmg * 1.65), Math.sign(e.x - player.x) * 340, true, player.weaponType);
         }
       });
     }
@@ -653,15 +773,15 @@ function update(dt) {
 }
 
 // =====================================================
-// 5. ОБНОВЛЕНИЕ МИРА: ЦЕПИ, ЛЮСТРЫ, ЛУТ, ВРАГИ И БОСС
+// 5. ОБНОВЛЕНИЕ МИРА, ОТРУБЛЕННЫХ ЧАСТЕЙ ТЕЛ И ВЫБИТОГО ОРУЖИЯ
 // =====================================================
 function updateWorldEntities(dt) {
   const pxCenter = player.x + player.w / 2;
   const pyCenter = player.y + player.h / 2;
 
-  // Физика плаща
-  let leadX = pxCenter - player.facing * 5;
-  let leadY = player.y + 12;
+  // Плащ
+  let leadX = pxCenter - player.facing * 6;
+  let leadY = player.y + 16;
   player.scarf.forEach((node, idx) => {
     node.x += (leadX - node.x - player.facing * 5) * Math.min(1, dt * (24 - idx * 2));
     node.y += (leadY - node.y + Math.sin(performance.now() * 0.015 + idx) * 1.8) * Math.min(1, dt * 20);
@@ -674,23 +794,22 @@ function updateWorldEntities(dt) {
     leadX = node.x; leadY = node.y;
   });
 
-  // 1. Интерактивные висячие цепи (качаются при пробежке игрока!)
+  // 1. Цепи
   WORLD.chains.forEach(ch => {
     ch.nodes.forEach((n, idx) => {
       if (idx === 0) { n.x = ch.anchorX; n.y = ch.anchorY; return; }
-      // Реакция на пробегающего мимо героя
-      if (Math.abs(n.x - pxCenter) < 22 && Math.abs(n.y - pyCenter) < 30 && Math.abs(player.vx) > 60) {
+      if (Math.abs(n.x - pxCenter) < 24 && Math.abs(n.y - pyCenter) < 34 && Math.abs(player.vx) > 60) {
         n.vx += player.vx * 0.35;
       }
       const prev = ch.nodes[idx - 1];
       const force = (prev.x - n.x) * 38;
       n.vx = (n.vx + force * dt) * Math.pow(0.08, dt);
       n.x += n.vx * dt;
-      n.y = ch.anchorY + idx * 11;
+      n.y = ch.anchorY + idx * 12;
     });
   });
 
-  // 2. Падение перерубленных чугунных люстр на головы врагов!
+  // 2. Люстры
   WORLD.chandeliers.forEach(c => {
     if (c.state === 'falling') {
       c.vy += GRAVITY * 1.15 * dt;
@@ -699,36 +818,52 @@ function updateWorldEntities(dt) {
         c.y = WORLD.FLOOR_Y - 12;
         c.state = 'crashed';
         cam.shake = 15;
-        sfx.hit(true);
-        sfx.thunder();
+        sfx.goreHit(true); sfx.thunder();
         spawnParticles(c.x, c.y, '#ffae38', 36, 380);
-        spawnParticles(c.x, c.y, '#e63246', 20, 280);
         WORLD.enemies.forEach(e => {
           if (Math.abs((e.x + e.w / 2) - c.x) < 135) {
-            damageEnemy(e, 180, Math.sign((e.x + e.w / 2) - c.x) * 420, true, '#ffae38');
-            e.state = 'stunned'; e.timer = 2.5;
+            applyAnatomyDamage(e, 190, Math.sign((e.x + e.w / 2) - c.x) * 420, true, 'hammer');
           }
         });
       }
     }
   });
 
-  // 3. Выпадающие из бочек сферы здоровья и пепла (притягиваются магнитом к рыцарю)
+  // 3. Физика отрубленных половин тел, черепов и ног (Corpse Ragdoll)
+  WORLD.corpses.forEach(c => {
+    c.vy += GRAVITY * 0.9 * dt;
+    c.x += c.vx * dt;
+    c.y += c.vy * dt;
+    c.rot += c.vrot * dt;
+    if (c.y >= WORLD.FLOOR_Y - 8) {
+      c.y = WORLD.FLOOR_Y - 8;
+      c.vy *= -0.35;
+      c.vx *= 0.78;
+      c.vrot *= 0.7;
+    }
+  });
+
+  // 4. Физика выбитого оружия врагов
+  WORLD.droppedWeapons.forEach(dw => {
+    dw.vy += GRAVITY * 0.9 * dt;
+    dw.x += dw.vx * dt;
+    dw.y += dw.vy * dt;
+    if (dw.y >= WORLD.FLOOR_Y - 5) {
+      dw.y = WORLD.FLOOR_Y - 5;
+      dw.vy = 0; dw.vx *= 0.7;
+    } else {
+      dw.rot += dt * 14;
+    }
+  });
+
+  // 5. Лут
   for (let i = WORLD.lootOrbs.length - 1; i >= 0; i--) {
     const orb = WORLD.lootOrbs[i];
     orb.vy += GRAVITY * 0.8 * dt;
-    orb.x += orb.vx * dt;
-    orb.y += orb.vy * dt;
-    if (orb.y > WORLD.FLOOR_Y - 8) {
-      orb.y = WORLD.FLOOR_Y - 8;
-      orb.vy *= -0.45;
-      orb.vx *= 0.8;
-    }
+    orb.x += orb.vx * dt; orb.y += orb.vy * dt;
+    if (orb.y > WORLD.FLOOR_Y - 8) { orb.y = WORLD.FLOOR_Y - 8; orb.vy *= -0.45; orb.vx *= 0.8; }
     const dist = Math.hypot(pxCenter - orb.x, pyCenter - orb.y);
-    if (dist < 110) {
-      orb.x += (pxCenter - orb.x) * dt * 9;
-      orb.y += (pyCenter - orb.y) * dt * 9;
-    }
+    if (dist < 110) { orb.x += (pxCenter - orb.x) * dt * 9; orb.y += (pyCenter - orb.y) * dt * 9; }
     if (dist < 26) {
       if (orb.type === 'hp') {
         player.hp = Math.min(player.maxHp, player.hp + orb.val);
@@ -742,25 +877,43 @@ function updateWorldEntities(dt) {
     }
   }
 
-  // 4. Наземные ударные волны Босса
+  // 6. Ударные волны Босса
   for (let i = WORLD.shockwaves.length - 1; i >= 0; i--) {
     const sw = WORLD.shockwaves[i];
-    sw.x += sw.vx * dt;
-    sw.life -= dt;
+    sw.x += sw.vx * dt; sw.life -= dt;
     spawnParticles(sw.x, WORLD.FLOOR_Y - 4, '#ffae38', 1, 60, 200);
-    if (Math.abs(sw.x - pxCenter) < 20 && player.y + player.h >= WORLD.FLOOR_Y - 14) {
+    if (Math.abs(sw.x - pxCenter) < 22 && player.y + player.h >= WORLD.FLOOR_Y - 14) {
       hurtPlayer(20, Math.sign(sw.vx) * 320, true);
       sw.life = 0;
     }
     if (sw.life <= 0) WORLD.shockwaves.splice(i, 1);
   }
 
-  // 5. ИИ Врагов и БОССА
+  // 7. ИИ Врагов (с учётом сломанных ног, кровотечения и поиска выбитого оружия!)
   for (let i = WORLD.enemies.length - 1; i >= 0; i--) {
     const e = WORLD.enemies[i];
     if (e.hp <= 0) { WORLD.enemies.splice(i, 1); continue; }
     if (e.flashTimer > 0) e.flashTimer -= dt;
     if (e.atkCooldown > 0) e.atkCooldown -= dt;
+
+    // Кровотечение от кинжалов и вспоротого живота
+    if (e.bleedTimer > 0 || e.gutsSpilled) {
+      e.bleedTimer -= dt;
+      if (Math.random() < 0.15) {
+        spawnParticles(e.x + e.w / 2, e.y + e.h * 0.6, '#e03448', 1, 40, 300);
+        if (e.gutsSpilled) e.hp -= dt * 3.5;
+      }
+    }
+
+    // Физика выпавших петель кишок врага
+    if (e.gutsSpilled) {
+      let gx = e.x + e.w / 2, gy = e.y + e.h * 0.52;
+      e.gutNodes.forEach((gn, idx) => {
+        gn.x += (gx - gn.x) * Math.min(1, dt * (18 - idx * 2));
+        gn.y = Math.min(WORLD.FLOOR_Y - 3, gy + (idx + 1) * 6);
+        gx = gn.x; gy = gn.y;
+      });
+    }
 
     const exCenter = e.x + e.w / 2, eyCenter = e.y + e.h / 2;
     const dx = pxCenter - exCenter, dy = pyCenter - eyCenter;
@@ -771,37 +924,50 @@ function updateWorldEntities(dt) {
       e.timer -= dt;
       e.vx *= Math.pow(0.01, dt);
       if (e.timer <= 0) e.state = 'chase';
+    } else if (e.disarmed && WORLD.droppedWeapons.length > 0) {
+      // ЕСЛИ ОРУЖИЕ ВЫБИТО -> ВРАГ ПЫТАЕТСЯ ДОПОЛЗТИ/ДОБЕЖАТЬ ДО СВОЕГО КЛИНКА НА ПОЛУ!
+      const dw = WORLD.droppedWeapons[0];
+      const toWep = dw.x - exCenter;
+      e.facing = toWep >= 0 ? 1 : -1;
+      const spd = e.legBroken ? 48 : 130;
+      e.vx += (e.facing * spd - e.vx) * dt * 6;
+      e.stepPhase += Math.abs(e.vx) * dt * 0.06;
+      if (Math.abs(toWep) < 26 && Math.abs(e.y + e.h - dw.y) < 35) {
+        e.disarmed = false;
+        WORLD.droppedWeapons.splice(0, 1);
+        addFloatText(exCenter, e.y - 16, 'ПОДНЯЛ ОРУЖИЕ!', '#ffbe42');
+      }
+    } else if (e.legBroken && e.disarmed) {
+      // Без ноги и без оружия — в ужасе отползает на руках от рыцаря!
+      e.facing = dx >= 0 ? -1 : 1;
+      e.vx += (e.facing * 45 - e.vx) * dt * 5;
+      e.stepPhase += Math.abs(e.vx) * dt * 0.08;
     } else if (e.state === 'windup') {
       e.vx *= 0.82;
       e.timer -= dt;
       if (e.timer <= 0) {
         e.state = 'strike';
-        e.timer = 0.18;
-        e.vx = e.facing * (e.type === 'boss' ? 460 : (e.type === 'warden' ? 330 : 390));
+        e.timer = 0.20;
+        e.vx = e.facing * (e.legBroken ? 120 : (e.type === 'boss' ? 460 : (e.type === 'warden' ? 330 : 390)));
 
-        // Босс при ударе пускает огненные волны по полу в обе стороны!
         if (e.type === 'boss') {
-          cam.shake = 14;
-          sfx.thunder();
+          cam.shake = 14; sfx.thunder();
           WORLD.shockwaves.push({ x: exCenter, vx: -360, life: 1.1 });
           WORLD.shockwaves.push({ x: exCenter, vx: 360, life: 1.1 });
         }
 
-        const hitRange = e.type === 'boss' ? 92 : (e.type === 'warden' ? 74 : 58);
-        if (Math.abs(dx) < hitRange && Math.abs(dy) < 58 && canSee) {
+        const hitRange = e.type === 'boss' ? 92 : (e.type === 'warden' ? 76 : 62);
+        if (Math.abs(dx) < hitRange && Math.abs(dy) < 62 && canSee) {
           if (player.parryWindow > 0) {
             sfx.parryClang();
-            hitstopTimer = 0.095;
-            cam.shake = 13;
+            hitstopTimer = 0.095; cam.shake = 13;
             e.state = 'stunned';
             e.timer = e.type === 'boss' ? 1.5 : 2.3;
             e.vx = -e.facing * 260;
             spawnParticles(pxCenter + player.facing * 14, pyCenter, '#6ab0e8', 24, 340);
             addFloatText(exCenter, e.y - 16, 'ПАРИРОВАНИЕ!', '#6ab0e8', true);
             if (player.chainLightning) triggerChainLightning(e, Math.round(player.dmg * 0.85));
-            if (navigator.vibrate) navigator.vibrate([30, 20, 50]);
           } else {
-            // Если это тяжёлый удар Палача/Босса ИЛИ герой потерял баланс -> сбивает с ног!
             const causesKnockdown = (e.type === 'warden' || e.type === 'boss' || player.offBalanceTimer > 0);
             hurtPlayer(e.dmg, e.facing * (causesKnockdown ? 380 : 250), causesKnockdown);
           }
@@ -816,12 +982,15 @@ function updateWorldEntities(dt) {
     } else {
       if (dist < 480 && (canSee || e.type === 'wraith')) {
         e.facing = dx >= 0 ? 1 : -1;
-        const spd = e.type === 'boss' ? 145 : (e.type === 'warden' ? 105 : (e.type === 'wraith' ? 190 : 155));
-        if (Math.abs(dx) > (e.type === 'boss' ? 62 : 42)) {
+        let spd = e.type === 'boss' ? 145 : (e.type === 'warden' ? 105 : (e.type === 'wraith' ? 190 : 155));
+        if (e.legBroken) spd = 46; // Со сломанной ногой медленно ползёт!
+        if (Math.abs(dx) > (e.type === 'boss' ? 66 : 46)) {
           e.vx += (e.facing * spd - e.vx) * dt * 8;
-        } else if (e.atkCooldown <= 0 && Math.abs(dy) < 65 && canSee) {
+          e.stepPhase += Math.abs(e.vx) * dt * 0.055;
+        } else if (!e.disarmed && e.atkCooldown <= 0 && Math.abs(dy) < 65 && canSee) {
           e.state = 'windup';
-          e.timer = e.type === 'boss' ? 0.58 : (e.type === 'warden' ? 0.52 : 0.40);
+          e.atkDuration = e.type === 'boss' ? 0.58 : (e.type === 'warden' ? 0.52 : 0.40);
+          e.timer = e.atkDuration;
         }
       } else {
         e.vx *= 0.88;
@@ -854,7 +1023,7 @@ function updateWorldEntities(dt) {
     }
   }
 
-  // 6. Алтарь и Врата
+  // 8. Алтарь и Врата
   const useBtn = document.getElementById('btn-use');
   const nearShrine = WORLD.shrine && !WORLD.shrine.used && Math.hypot(player.x - WORLD.shrine.x, (player.y + player.h) - WORLD.shrine.y) < 75;
   const nearPortal = WORLD.portal && WORLD.enemies.length === 0 && Math.hypot(player.x - WORLD.portal.x, (player.y + player.h) - WORLD.portal.y) < 85;
@@ -872,15 +1041,11 @@ function updateWorldEntities(dt) {
     input.usePressed = false;
   }
 
-  // 7. Частицы и молнии
+  // 9. Частицы и молнии
   for (let i = WORLD.particles.length - 1; i >= 0; i--) {
     const pt = WORLD.particles[i];
     pt.vy += pt.gravity * dt; pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt;
     if (pt.life <= 0) WORLD.particles.splice(i, 1);
-  }
-  for (let i = WORLD.slashArcs.length - 1; i >= 0; i--) {
-    WORLD.slashArcs[i].life -= dt;
-    if (WORLD.slashArcs[i].life <= 0) WORLD.slashArcs.splice(i, 1);
   }
   for (let i = WORLD.lightningBolts.length - 1; i >= 0; i--) {
     WORLD.lightningBolts[i].life -= dt;
@@ -892,11 +1057,11 @@ function updateWorldEntities(dt) {
     if (ft.life <= 0) WORLD.floatTexts.splice(i, 1);
   }
 
-  // 8. Камера
+  // 10. Камера
   const scale = H / VIEW_H;
   const viewW = W / scale;
-  const targetCamX = Math.max(-60, Math.min(WORLD.roomWidth - viewW + 60, pxCenter + player.facing * 55 - viewW / 2));
-  const targetCamY = Math.min(WORLD.FLOOR_Y - VIEW_H + 65, player.y - VIEW_H * 0.56);
+  const targetCamX = Math.max(-60, Math.min(WORLD.roomWidth - viewW + 60, pxCenter + player.facing * 48 - viewW / 2));
+  const targetCamY = Math.min(WORLD.FLOOR_Y - VIEW_H + 55, player.y - VIEW_H * 0.54);
   cam.x += (targetCamX - cam.x) * Math.min(1, dt * 8);
   cam.y += (targetCamY - cam.y) * Math.min(1, dt * 7);
   if (cam.shake > 0) cam.shake = Math.max(0, cam.shake - dt * 28);
@@ -917,14 +1082,14 @@ function hurtPlayer(dmg, knockVx, knockdown = false) {
     addFloatText(player.x + player.w / 2, player.y - 24, 'СБИТ С НОГ! [ЖМИ РЫВОК]', '#ffbe42', true);
   }
   cam.shake = 13;
-  sfx.hit(true);
+  sfx.goreHit(true);
   spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#d93848', 18, 260);
   addFloatText(player.x + player.w / 2, player.y - 10, `-${dmg}`, '#ff4d5e', true);
   if (navigator.vibrate) navigator.vibrate(110);
 
   if (player.hp <= 0) {
     player.hp = 100; player.maxHp = 100;
-    player.dmg = 26; player.critChance = 0.15;
+    player.dmg = 28; player.critChance = 0.15;
     player.vampOnKill = 0; player.rangeBonus = 0;
     player.chainLightning = false; player.noOverswing = false;
     player.weaponType = 'greatsword';
@@ -962,7 +1127,7 @@ function updateHUD() {
 }
 
 // =====================================================
-// 6. РЕНДЕР МИРА И 6-СУСТАВНОГО СКЕЛЕТА РЫЦАРЯ
+// 6. РЕНДЕР: НАСТОЯЩИЕ ЗВЕНЬЯ ЦЕПЕЙ, 14-СУСТАВНЫЙ РЫЦАРЬ И АНАТОМИЯ ВРАГОВ
 // =====================================================
 let stonePat = null, platPat = null;
 
@@ -1006,43 +1171,61 @@ function render() {
     ctx.fillStyle = '#ffbe42'; ctx.fillRect(t.x - 4, t.y - 8, 8, 8);
   });
 
-  // 2. Физические висячие цепи
-  ctx.strokeStyle = '#4a5162';
-  ctx.lineWidth = 3;
+  // 2. НАСТОЯЩИЕ КОВАНЫЕ МЕТАЛЛИЧЕСКИЕ ЦЕПИ (ЧЕРЕДУЮЩИЕСЯ КОЛЬЦА ВМЕСТО ВЕРЁВОЧЕК!)
   WORLD.chains.forEach(ch => {
-    ctx.beginPath();
-    ch.nodes.forEach((n, idx) => {
-      if (idx === 0) ctx.moveTo(n.x, n.y);
-      else ctx.lineTo(n.x, n.y);
-    });
-    ctx.stroke();
+    for (let i = 0; i < ch.nodes.length - 1; i++) {
+      const a = ch.nodes[i], b = ch.nodes[i + 1];
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      ctx.save();
+      ctx.translate(mx, my);
+      ctx.rotate(ang);
+      if (i % 2 === 0) {
+        // Широкое кольцо звена с отверстием внутри и бликом металла
+        ctx.fillStyle = '#090a0f';
+        ctx.fillRect(-7, -4, 14, 8);
+        ctx.strokeStyle = '#6c758c';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-6, -3, 12, 6);
+        ctx.fillStyle = '#aeb8d1';
+        ctx.fillRect(-5, -3, 8, 1);
+      } else {
+        // Повёрнутое ребром звено цепи
+        ctx.fillStyle = '#3d4352';
+        ctx.fillRect(-7, -2, 14, 4);
+        ctx.fillStyle = '#aeb8d1';
+        ctx.fillRect(-5, -1, 10, 1);
+      }
+      ctx.restore();
+    }
   });
 
-  // 3. Подвесные чугунные люстры (ловушки!)
+  // 3. Люстры с кованой цепью
   WORLD.chandeliers.forEach(c => {
     if (c.state === 'hanging') {
-      ctx.strokeStyle = '#7b849b';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.moveTo(c.x, c.anchorY); ctx.lineTo(c.x, c.y); ctx.stroke();
+      for (let y = c.anchorY; y < c.y; y += 10) {
+        ctx.strokeStyle = '#6c758c'; ctx.lineWidth = 2;
+        ctx.strokeRect(c.x - 3, y, 6, 8);
+      }
     }
     if (c.state !== 'crashed') {
-      ctx.fillStyle = '#25293a';
-      ctx.fillRect(c.x - 18, c.y, 36, 10);
-      ctx.fillStyle = '#ffae38';
-      ctx.fillRect(c.x - 12, c.y - 8, 24, 8);
+      ctx.fillStyle = '#25293a'; ctx.fillRect(c.x - 18, c.y, 36, 10);
+      ctx.fillStyle = '#ffae38'; ctx.fillRect(c.x - 12, c.y - 8, 24, 8);
     }
   });
 
-  // 4. Алтарь и Врата
+  // 4. Алтарь на каменном пьедестале и Врата
   if (WORLD.shrine) {
     const sh = WORLD.shrine;
-    ctx.fillStyle = '#252836'; ctx.fillRect(sh.x - 22, sh.y - 16, 44, 16);
-    ctx.fillStyle = '#383d52'; ctx.fillRect(sh.x - 14, sh.y - 38, 28, 22);
+    ctx.fillStyle = '#1e212e'; ctx.fillRect(sh.x - 36, sh.y - 8, 72, 8);
+    ctx.fillStyle = '#2a2e40'; ctx.fillRect(sh.x - 24, sh.y - 20, 48, 12);
+    ctx.fillStyle = '#383d52'; ctx.fillRect(sh.x - 14, sh.y - 44, 28, 24);
     if (!sh.used) {
-      const hoverY = sh.y - 54 + Math.sin(now * 0.005) * 5;
-      ctx.fillStyle = 'rgba(196, 164, 108, 0.25)';
-      ctx.beginPath(); ctx.arc(sh.x, hoverY, 26, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#f2d899'; ctx.fillRect(sh.x - 6, hoverY - 6, 12, 12);
+      const hoverY = sh.y - 62 + Math.sin(now * 0.005) * 5;
+      ctx.fillStyle = 'rgba(196, 164, 108, 0.28)';
+      ctx.beginPath(); ctx.arc(sh.x, hoverY, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f2d899';
+      ctx.fillRect(sh.x - 7, hoverY - 7, 14, 14);
     }
   }
   if (WORLD.portal) {
@@ -1056,218 +1239,67 @@ function render() {
     }
   }
 
-  // 5. Платформы, бочки и лут
+  // 5. Платформы, кровь, отрубленные части тел, выбитое оружие
   WORLD.platforms.forEach(p => {
     ctx.fillStyle = p.type === 'plat' ? platPat : stonePat;
     ctx.fillRect(p.x, p.y, p.w, p.h);
     ctx.fillStyle = p.type === 'plat' ? '#5c6684' : '#32384d';
     ctx.fillRect(p.x, p.y, p.w, 5);
-    ctx.strokeStyle = '#0a0b10'; ctx.lineWidth = 2; ctx.strokeRect(p.x, p.y, p.w, p.h);
+    ctx.strokeStyle = '#08090d'; ctx.lineWidth = 2; ctx.strokeRect(p.x, p.y, p.w, p.h);
   });
 
-  ctx.fillStyle = '#751522';
+  ctx.fillStyle = '#8a1625';
   WORLD.bloodStains.forEach(b => ctx.fillRect(b.x, b.y - 2, b.w, 4));
 
-  WORLD.barrels.forEach(b => {
-    ctx.drawImage(SPRITES.barrel, b.x, b.y, b.w, b.h);
+  // Отрубленные половины тел и конечности на полу
+  WORLD.corpses.forEach(c => {
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.rot);
+    if (c.kind === 'upperBody') {
+      const headSpr = c.enemyType === 'stalker' ? SPRITES.skullHead : SPRITES.wardenHead;
+      const chestSpr = c.enemyType === 'stalker' ? SPRITES.boneRibs : SPRITES.wardenChest;
+      ctx.drawImage(chestSpr, -12, -8, 24, 16);
+      ctx.drawImage(headSpr, -10, -22, 20, 15);
+      // Кровавый срез на поясе
+      ctx.fillStyle = '#e03448'; ctx.fillRect(-8, 6, 16, 4);
+    } else if (c.kind === 'lowerLegs') {
+      ctx.fillStyle = '#e03448'; ctx.fillRect(-7, -8, 14, 4);
+      ctx.drawImage(SPRITES.knightThigh, -8, -4, 8, 12);
+      ctx.drawImage(SPRITES.knightThigh, 2, -4, 8, 12);
+    } else if (c.kind === 'skull') {
+      ctx.drawImage(SPRITES.skullHead, -9, -9, 18, 16);
+    } else {
+      ctx.drawImage(SPRITES.knightShin, -4, -6, 8, 12);
+    }
+    ctx.restore();
   });
 
+  // Выбитое оружие на полу
+  WORLD.droppedWeapons.forEach(dw => {
+    ctx.save();
+    ctx.translate(dw.x, dw.y);
+    ctx.rotate(dw.rot);
+    ctx.fillStyle = '#c4a46c'; ctx.fillRect(-10, -2, 6, 4);
+    ctx.fillStyle = '#aeb8d1'; ctx.fillRect(-4, -3, 20, 5);
+    ctx.restore();
+  });
+
+  WORLD.barrels.forEach(b => ctx.drawImage(SPRITES.barrel, b.x, b.y, b.w, b.h));
   WORLD.lootOrbs.forEach(orb => {
     ctx.fillStyle = orb.type === 'hp' ? '#68e09c' : '#f2d899';
     ctx.beginPath(); ctx.arc(orb.x, orb.y, 6, 0, Math.PI * 2); ctx.fill();
   });
 
-  // 6. Враги и БОСС
+  // 6. МНОГОСУСТАВНЫЙ РЕНДЕР ВРАГОВ С РАНАМИ, КИШКАМИ И ПЕРЕЛОМАМИ!
   WORLD.enemies.forEach(e => {
-    ctx.save();
-    const bob = Math.sin(now * 0.012 + e.animOffset) * 2;
-    if (e.state === 'windup') {
-      ctx.fillStyle = '#ffbe42'; ctx.font = '900 15px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('!', e.x + e.w / 2, e.y - 12);
-    }
-    if (e.state === 'stunned') {
-      ctx.fillStyle = '#6ab0e8'; ctx.font = '900 10px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('ОГЛУШЁН', e.x + e.w / 2, e.y - 14);
-    }
-    const spr = (e.type === 'warden' || e.type === 'boss') ? SPRITES.warden : (e.type === 'wraith' ? SPRITES.wraith : SPRITES.stalker);
-    ctx.translate(e.x + e.w / 2, e.y + e.h / 2 + bob);
-    ctx.scale(e.facing, 1);
-    if (e.flashTimer > 0) ctx.filter = 'brightness(4)';
-    ctx.drawImage(spr, -e.w / 2 - 4, -e.h / 2 - 2, e.w + 8, e.h + 4);
-    ctx.filter = 'none';
-
-    ctx.fillStyle = e.state === 'windup' ? '#ffbe42' : '#8d96ad';
-    if (e.type === 'warden' || e.type === 'boss') {
-      const s = e.type === 'boss' ? 1.45 : 1.0;
-      ctx.fillRect(10 * s, -18 * s, 4 * s, 36 * s);
-      ctx.fillStyle = '#e63246';
-      ctx.fillRect(12 * s, -16 * s, 11 * s, 15 * s);
-    } else if (e.type === 'stalker') {
-      ctx.fillRect(10, -6, 14, 4);
-    }
-    ctx.restore();
-
-    if (e.hp < e.maxHp || e.type === 'boss') {
-      const barW = e.type === 'boss' ? 90 : e.w + 6;
-      const bx = e.x + e.w / 2 - barW / 2;
-      ctx.fillStyle = '#120d0f'; ctx.fillRect(bx, e.y - 10, barW, 5);
-      ctx.fillStyle = e.type === 'boss' ? '#ffae38' : '#e63246';
-      ctx.fillRect(bx + 1, e.y - 9, (barW - 2) * (e.hp / e.maxHp), 3);
-    }
+    drawArticulatedEnemy(e, now);
   });
 
-  // 7. ОТРИСОВКА ПРОЦЕДУРНОГО 6-СУСТАВНОГО СКЕЛЕТА ПЕПЕЛЬНОГО РЫЦАРЯ!
-  ctx.strokeStyle = '#9e1e2e';
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  player.scarf.forEach((n, idx) => {
-    if (idx === 0) ctx.moveTo(n.x, n.y);
-    else ctx.lineTo(n.x, n.y);
-  });
-  ctx.stroke();
+  // 7. 14-СУСТАВНЫЙ РЕНДЕР ПЕПЕЛЬНОГО РЫЦАРЯ (БЕДРО -> КОЛЕНО -> ГОЛЕНЬ -> СТОПА, ПЛЕЧО -> ЛОКОТЬ -> КИСТЬ -> ОРУЖИЕ)!
+  drawArticulatedKnight(now);
 
-  ctx.save();
-  if (player.invuln > 0 && Math.floor(now / 45) % 2 === 0) ctx.globalAlpha = 0.45;
-
-  const cx = player.x + player.w / 2;
-  const bottomY = player.y + player.h;
-  ctx.translate(cx, bottomY);
-  // Пружина Squash & Stretch от стоп
-  ctx.scale(player.facing * (2 - player.squashY), player.squashY);
-
-  // Боевой кувырок 360 градусов ИЛИ падение на спину при Knockdown
-  if (player.dashTimer > 0) {
-    ctx.translate(0, -22);
-    ctx.rotate(player.rollAngle);
-    ctx.translate(0, 22);
-  } else if (player.knockdown) {
-    ctx.rotate(-1.35);
-  }
-
-  // А) ПРОЦЕДУРНЫЕ ШАГАЮЩИЕ НОГИ (IK Foot Placement)
-  let leftFootX = -5, leftFootY = -8;
-  let rightFootX = 3, rightFootY = -8;
-
-  if (player.ledgeGrab) {
-    leftFootX = -6; leftFootY = -6;
-    rightFootX = -2; rightFootY = -2;
-  } else if (!player.grounded) {
-    // В прыжке колени поджаты
-    leftFootX = -7; leftFootY = -12;
-    rightFootX = 4; rightFootY = -10;
-  } else if (player.skidTimer > 0) {
-    // В тормозном заносе одна нога жёстко выставлена вперёд!
-    leftFootX = -8; leftFootY = -8;
-    rightFootX = 11; rightFootY = -8;
-  } else if (player.offBalanceTimer > 0) {
-    // Потеря баланса — рыцарь падает на переднее колено!
-    leftFootX = -10; leftFootY = -8;
-    rightFootX = 9; rightFootY = -5;
-  } else if (Math.abs(player.vx) > 25) {
-    const s1 = Math.sin(player.stepPhase);
-    const s2 = Math.sin(player.stepPhase + Math.PI);
-    leftFootX = -2 + s1 * 9;
-    leftFootY = -8 - Math.max(0, Math.cos(player.stepPhase)) * 6;
-    rightFootX = -2 + s2 * 9;
-    rightFootY = -8 - Math.max(0, Math.cos(player.stepPhase + Math.PI)) * 6;
-  }
-
-  ctx.drawImage(SPRITES.foot, leftFootX - 5, leftFootY - 2, 12, 10);
-  ctx.drawImage(SPRITES.foot, rightFootX - 5, rightFootY - 2, 12, 10);
-
-  // Б) ТОРС И ГОЛОВА С ФИЗИЧЕСКИМ НАКЛОНОМ (TORSO LEAN)
-  ctx.save();
-  const hipY = player.offBalanceTimer > 0 ? -15 : -20;
-  const runBob = (player.grounded && Math.abs(player.vx) > 25) ? Math.abs(Math.cos(player.stepPhase)) * 2.5 : 0;
-  ctx.translate(0, hipY - runBob);
-  ctx.rotate(player.torsoLean * player.facing);
-
-  // Задняя рука (при захвате за уступ тянется вверх к камню!)
-  if (player.ledgeGrab) {
-    ctx.drawImage(SPRITES.hand, 6, -24, 9, 9);
-  } else {
-    ctx.drawImage(SPRITES.hand, -9, -6, 9, 9);
-  }
-
-  // Латная кираса
-  ctx.drawImage(SPRITES.torso, -10, -14, 20, 22);
-
-  // Шлем с горящим визором
-  ctx.save();
-  ctx.translate(0, -15);
-  ctx.rotate(player.torsoLean * player.facing * 0.35);
-  ctx.drawImage(SPRITES.head, -10, -14, 20, 18);
-  ctx.restore();
-
-  // В) ПЕРЕДНЯЯ РУКА И ТЯЖЁЛОЕ ОРУЖИЕ С ФИЗИКОЙ ЗАМАХА И ПЕРЕВЕСА
-  ctx.save();
-  let weaponAngle = -0.45;
-  if (player.ledgeGrab) {
-    weaponAngle = -1.3;
-  } else if (player.offBalanceTimer > 0) {
-    // Клинок воткнут/упёрт в землю от перевеса!
-    weaponAngle = 1.25;
-  } else if (player.atkTimer > 0) {
-    const p = 1 - (player.atkTimer / player.atkDuration);
-    weaponAngle = player.comboStep === 2 ? (1.1 - p * 2.2) : (-1.2 + p * 2.4);
-  }
-  ctx.translate(6, -4);
-  ctx.rotate(weaponAngle);
-
-  // Рукоять и лезвие в зависимости от класса оружия
-  ctx.fillStyle = '#c4a46c';
-  ctx.fillRect(-4, -2, 8, 4);
-  if (player.weaponType === 'hammer') {
-    // Молот Титана
-    ctx.fillStyle = '#5c3c24';
-    ctx.fillRect(2, -2, 26, 4);
-    ctx.fillStyle = player.swordColor;
-    ctx.fillRect(22, -11, 12, 22);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(24, -9, 4, 18);
-  } else if (player.weaponType === 'daggers') {
-    // Парные клинки Ворона
-    ctx.fillStyle = player.swordColor;
-    ctx.fillRect(4, -2, 18, 4);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(4, -1, 16, 2);
-  } else {
-    // Двуручный Клеймор
-    ctx.fillRect(2, -7, 3, 14);
-    const bladeLen = 27 + player.rangeBonus * 0.35;
-    ctx.fillStyle = player.swordColor;
-    ctx.fillRect(5, -3, bladeLen, 6);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(5, -2, bladeLen - 2, 2);
-  }
-  // Латная перчатка поверх рукояти
-  ctx.drawImage(SPRITES.hand, -4, -4, 9, 9);
-  ctx.restore();
-
-  ctx.restore(); // конец торса
-  ctx.restore(); // конец рыцаря
-
-  // 8. Щит, дуги рассечения и молнии
-  if (player.parryWindow > 0) {
-    ctx.strokeStyle = '#6ab0e8'; ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(cx, player.y + player.h / 2, 32, -Math.PI * 0.45, Math.PI * 0.45, player.facing < 0);
-    ctx.stroke();
-  }
-
-  WORLD.slashArcs.forEach(s => {
-    ctx.save();
-    ctx.translate(s.x, s.y); ctx.scale(s.dir, 1);
-    ctx.strokeStyle = s.color;
-    ctx.globalAlpha = s.life / s.maxLife;
-    ctx.lineWidth = s.step === 3 ? 16 : 9;
-    ctx.beginPath();
-    if (s.step === 2) ctx.arc(0, 0, s.radius * 0.78, Math.PI * 0.65, -Math.PI * 0.55, true);
-    else ctx.arc(0, 0, s.radius * 0.78, -Math.PI * 0.55, Math.PI * 0.55, false);
-    ctx.stroke();
-    ctx.restore();
-  });
-
+  // 8. Молнии, частицы и текст
   WORLD.lightningBolts.forEach(bolt => {
     ctx.save();
     ctx.globalAlpha = bolt.life / bolt.maxLife;
@@ -1287,14 +1319,338 @@ function render() {
   ctx.globalAlpha = 1;
 
   WORLD.floatTexts.forEach(ft => {
-    ctx.font = ft.big ? '900 16px sans-serif' : '800 12px sans-serif';
-    ctx.fillStyle = '#0a0b10'; ctx.textAlign = 'center';
+    ctx.font = ft.big ? '900 15px sans-serif' : '800 11px sans-serif';
+    ctx.fillStyle = '#08090d'; ctx.textAlign = 'center';
     ctx.fillText(ft.text, ft.x + 1, ft.y + 1);
     ctx.fillStyle = ft.color;
     ctx.fillText(ft.text, ft.x, ft.y);
   });
 
   ctx.restore();
+}
+
+// Отрисовка 2-сегментной конечности (Бедро + Голень + Стопа ИЛИ Плечо + Предплечье + Кисть)
+function drawTwoBoneLimb(hipX, hipY, thighAng, thighLen, shinAng, shinLen, sprUpper, sprLower, sprEnd) {
+  ctx.save();
+  ctx.translate(hipX, hipY);
+  ctx.rotate(thighAng);
+  ctx.drawImage(sprUpper, -5, 0, 10, thighLen + 2);
+  ctx.translate(0, thighLen);
+  ctx.rotate(shinAng);
+  ctx.drawImage(sprLower, -5, 0, 10, shinLen + 2);
+  ctx.translate(0, shinLen);
+  if (sprEnd) ctx.drawImage(sprEnd, -4, -2, 12, 7);
+  ctx.restore();
+}
+
+function drawArticulatedKnight(now) {
+  // Плащ
+  ctx.strokeStyle = '#8f1928';
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  player.scarf.forEach((n, idx) => {
+    if (idx === 0) ctx.moveTo(n.x, n.y);
+    else ctx.lineTo(n.x, n.y);
+  });
+  ctx.stroke();
+
+  ctx.save();
+  if (player.invuln > 0 && Math.floor(now / 45) % 2 === 0) ctx.globalAlpha = 0.45;
+
+  const cx = player.x + player.w / 2;
+  const bottomY = player.y + player.h;
+  ctx.translate(cx, bottomY);
+  ctx.scale(player.facing * (2 - player.squashY), player.squashY);
+
+  // Сальто с группировкой при отскоке от стены ИЛИ боевой кувырок!
+  const isTucked = (player.dashTimer > 0 || player.isWallFlipping);
+  if (isTucked) {
+    ctx.translate(0, -30);
+    ctx.rotate(player.isWallFlipping ? -player.flipAngle : player.flipAngle);
+    ctx.translate(0, 30);
+  } else if (player.knockdown) {
+    ctx.rotate(-1.4);
+  }
+
+  // ВЫЧИСЛЕНИЕ УГЛОВ БЕДРА И КОЛЕНА (2-СУСТАВНЫЕ НОГИ!)
+  let lThigh = 0, lShin = 0, rThigh = 0, rShin = 0;
+  let pelvisY = -28;
+
+  if (isTucked) {
+    // В сальто колени плотно поджаты к груди (группировка)!
+    lThigh = -1.25; lShin = 1.95;
+    rThigh = -1.05; rShin = 1.85;
+    pelvisY = -26;
+  } else if (player.ledgeGrab) {
+    // Висим на руках на краю плиты, ноги свободно упираются в стену
+    lThigh = -0.35; lShin = 0.55;
+    rThigh = 0.15; rShin = 0.35;
+  } else if (!player.grounded) {
+    lThigh = -0.65; lShin = 1.15;
+    rThigh = 0.35; rShin = 0.65;
+  } else if (player.skidTimer > 0) {
+    // В ТОРМОЗНОМ ЗАНОСЕ передняя нога жёстко выставлена вперёд, задняя согнута!
+    lThigh = 0.55; lShin = 0.65;
+    rThigh = -0.85; rShin = 0.15;
+    pelvisY = -23;
+  } else if (player.offBalanceTimer > 0) {
+    // Потеря равновесия — упал на одно колено!
+    lThigh = 0.85; lShin = 1.25;
+    rThigh = -0.95; rShin = 1.15;
+    pelvisY = -19;
+  } else if (Math.abs(player.vx) > 20) {
+    // Живой цикл бега с подъёмом бедра и сгибом колена!
+    const s1 = Math.sin(player.stepPhase);
+    const c1 = Math.cos(player.stepPhase);
+    const s2 = Math.sin(player.stepPhase + Math.PI);
+    const c2 = Math.cos(player.stepPhase + Math.PI);
+    lThigh = -s1 * 0.75;
+    lShin = Math.max(0.08, c1 * 0.95 + 0.35);
+    rThigh = -s2 * 0.75;
+    rShin = Math.max(0.08, c2 * 0.95 + 0.35);
+    pelvisY = -28 - Math.abs(c1) * 3;
+  }
+
+  // 1. Задняя нога
+  drawTwoBoneLimb(-3, pelvisY, lThigh, 13, lShin, 13, SPRITES.knightThigh, SPRITES.knightShin, SPRITES.knightFoot);
+
+  // 2. Таз и Грудная клетка с наклоном
+  ctx.save();
+  ctx.translate(0, pelvisY);
+  ctx.drawImage(SPRITES.knightPelvis, -9, -5, 18, 8);
+  ctx.rotate(player.torsoLean);
+
+  // ВЫЧИСЛЕНИЕ УГЛОВ ПЛЕЧА, ЛОКТЯ И ЗАПЯСТЬЯ (БИОМЕХАНИКА РАЗНЫХ УДАРОВ!)
+  let fShoulder = 0.35, fElbow = -0.85, fWrist = -0.2;
+  let bShoulder = -0.25, bElbow = -0.55;
+
+  if (player.ledgeGrab) {
+    // ОБЕ РУКИ ВЫТЯНУТЫ ВВЕРХ И ДЕРЖАТСЯ КИСТЯМИ ЗА УГОЛ ПЛАТФОРМЫ!
+    fShoulder = -1.95; fElbow = -0.35; fWrist = 0.4;
+    bShoulder = -1.75; bElbow = -0.45;
+  } else if (isTucked) {
+    fShoulder = 0.8; fElbow = -1.6;
+    bShoulder = 0.6; bElbow = -1.5;
+  } else if (player.offBalanceTimer > 0) {
+    // Опирается тяжёлым оружием в пол!
+    fShoulder = 0.95; fElbow = 0.15; fWrist = 0.6;
+  } else if (player.atkTimer > 0) {
+    const t = 1 - (player.atkTimer / player.atkDuration);
+    if (player.comboStep === 1) {
+      // Удар 1: Замах из-за плеча и хлесткий рубящий разгиб локтя и кисти
+      fShoulder = -1.5 + t * 2.5;
+      fElbow = -1.1 + t * 0.95;
+      fWrist = -0.6 + t * 1.1;
+    } else if (player.comboStep === 2) {
+      // Удар 2: Восходящий апперкот снизу вверх с разворотом кисти
+      fShoulder = 1.2 - t * 2.6;
+      fElbow = -0.3 - t * 0.5;
+      fWrist = 0.5 - t * 1.2;
+    } else {
+      // Удар 3 (Финишер): Мощнейший двуручный обвал сверху вниз всем весом корпуса!
+      fShoulder = -2.2 + t * 3.4;
+      fElbow = -0.8 + t * 0.75;
+      fWrist = -0.5 + t * 1.35;
+      bShoulder = fShoulder + 0.25;
+      bElbow = fElbow;
+    }
+  } else if (Math.abs(player.vx) > 20) {
+    const armSwing = Math.sin(player.stepPhase) * 0.45;
+    fShoulder = 0.25 + armSwing * 0.5;
+    bShoulder = -armSwing;
+  }
+
+  // Задняя рука (Плечо -> Локоть -> Предплечье -> Кисть; у Кинжалов держит второй клинок!)
+  drawArmWithWeapon(-4, -18, bShoulder, bElbow, 0, player.weaponType === 'daggers' ? 'offhandDagger' : 'none');
+
+  // Кираса и Голова
+  ctx.drawImage(SPRITES.knightChest, -12, -23, 24, 22);
+  ctx.save();
+  ctx.translate(1, -24);
+  ctx.rotate(player.torsoLean * 0.35);
+  ctx.drawImage(SPRITES.knightHead, -11, -15, 22, 17);
+  ctx.restore();
+
+  ctx.restore(); // Возврат к тазу для передней ноги
+
+  // 3. Передняя нога (рисуется поверх таза для глубины шага!)
+  drawTwoBoneLimb(3, pelvisY, rThigh, 13, rShin, 13, SPRITES.knightThigh, SPRITES.knightShin, SPRITES.knightFoot);
+
+  // 4. Передняя рука с основным оружием (рисуется на переднем плане!)
+  ctx.save();
+  ctx.translate(0, pelvisY);
+  ctx.rotate(player.torsoLean);
+  drawArmWithWeapon(4, -18, fShoulder, fElbow, fWrist, player.weaponType);
+  ctx.restore();
+
+  ctx.restore(); // Конец рыцаря
+
+  if (player.parryWindow > 0) {
+    ctx.strokeStyle = '#6ab0e8'; ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(cx, player.y + player.h / 2, 36, -Math.PI * 0.45, Math.PI * 0.45, player.facing < 0);
+    ctx.stroke();
+  }
+}
+
+function drawArmWithWeapon(shX, shY, shoulderAng, elbowAng, wristAng, weaponKind) {
+  ctx.save();
+  ctx.translate(shX, shY);
+  ctx.rotate(shoulderAng);
+  // Плечо
+  ctx.drawImage(SPRITES.knightUpperArm, -5, 0, 10, 13);
+  // Локоть и предплечье
+  ctx.translate(0, 11);
+  ctx.rotate(elbowAng);
+  ctx.drawImage(SPRITES.knightForearm, -5, 0, 10, 12);
+  // Запястье и кисть
+  ctx.translate(0, 10);
+  ctx.rotate(wristAng - Math.PI * 0.45);
+
+  if (weaponKind !== 'none') {
+    ctx.fillStyle = '#c4a46c';
+    ctx.fillRect(-5, -2, 9, 4);
+    if (weaponKind === 'hammer') {
+      // Двуручный Молот Титана
+      ctx.fillStyle = '#5c3c24'; ctx.fillRect(2, -2, 34, 4);
+      ctx.fillStyle = player.swordColor; ctx.fillRect(28, -13, 15, 26);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(30, -10, 5, 20);
+    } else if (weaponKind === 'daggers' || weaponKind === 'offhandDagger') {
+      // Клинок Ворона
+      ctx.fillStyle = player.swordColor; ctx.fillRect(4, -2, 20, 4);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(4, -1, 18, 2);
+    } else {
+      // Палаческий Клеймор
+      ctx.fillRect(2, -8, 4, 16);
+      const bladeLen = 34 + player.rangeBonus * 0.35;
+      ctx.fillStyle = player.swordColor; ctx.fillRect(6, -3, bladeLen, 6);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(6, -2, bladeLen - 2, 2);
+      // Кровь на кончике лезвия
+      if (WORLD.bloodStains.length > 0) {
+        ctx.fillStyle = '#e03448'; ctx.fillRect(bladeLen - 6, -3, 10, 3);
+      }
+    }
+  }
+  // Кисть в латной перчатке сжимает рукоять!
+  ctx.drawImage(SPRITES.knightHand, -4, -4, 9, 8);
+  ctx.restore();
+}
+
+// =====================================================
+// 7. ОТРИСОВКА СУСТАВНЫХ ВРАГОВ, ИХ РАН, КИШОК И ПОЛЗАНИЯ БЕЗ НОГ
+// =====================================================
+function drawArticulatedEnemy(e, now) {
+  // Физические петли кишок, если живот вспорот!
+  if (e.gutsSpilled && e.gutNodes.length > 0) {
+    ctx.strokeStyle = '#d46a7e';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(e.x + e.w / 2, e.y + e.h * 0.55);
+    e.gutNodes.forEach(gn => ctx.lineTo(gn.x, gn.y));
+    ctx.stroke();
+  }
+
+  ctx.save();
+  const cx = e.x + e.w / 2;
+  const bottomY = e.y + e.h;
+
+  if (e.state === 'windup') {
+    ctx.fillStyle = '#ffbe42'; ctx.font = '900 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('!', cx, e.y - 12);
+  }
+  if (e.state === 'stunned') {
+    ctx.fillStyle = '#6ab0e8'; ctx.font = '900 10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('ОГЛУШЁН', cx, e.y - 14);
+  }
+
+  ctx.translate(cx, bottomY);
+  ctx.scale(e.facing, 1);
+  if (e.flashTimer > 0) ctx.filter = 'brightness(4)';
+
+  const isBoss = e.type === 'boss';
+  const sc = isBoss ? 1.35 : 1.0;
+  ctx.scale(sc, sc);
+
+  // Если нога перебита молотом -> враг лежит горизонтально и подтягивается руками по полу!
+  if (e.legBroken) {
+    ctx.translate(0, -8);
+    ctx.rotate(1.18);
+  }
+
+  const s1 = Math.sin(e.stepPhase);
+  const s2 = Math.sin(e.stepPhase + Math.PI);
+  const lThigh = e.legBroken ? 0.4 : -s1 * 0.65;
+  const lShin = e.legBroken ? 0.2 : Math.max(0.1, Math.cos(e.stepPhase) * 0.8 + 0.3);
+  const rThigh = -s2 * 0.65;
+  const rShin = Math.max(0.1, Math.cos(e.stepPhase + Math.PI) * 0.8 + 0.3);
+
+  // Суставные ноги врага (если нога перебита — рисуем только одну и кровавую культю!)
+  if (e.type !== 'wraith') {
+    drawTwoBoneLimb(-3, -24, lThigh, 11, lShin, 11, SPRITES.knightThigh, SPRITES.knightShin, SPRITES.knightFoot);
+    if (!e.legBroken) {
+      drawTwoBoneLimb(3, -24, rThigh, 11, rShin, 11, SPRITES.knightThigh, SPRITES.knightShin, SPRITES.knightFoot);
+    } else {
+      ctx.fillStyle = '#e03448'; ctx.fillRect(1, -18, 7, 7);
+    }
+  }
+
+  // Торс и Голова врага
+  const chestSpr = e.type === 'stalker' ? SPRITES.boneRibs : SPRITES.wardenChest;
+  const headSpr = e.type === 'stalker' ? SPRITES.skullHead : SPRITES.wardenHead;
+  ctx.drawImage(chestSpr, -12, -44, 24, 22);
+  ctx.drawImage(headSpr, -11, -58, 22, 16);
+
+  // Отрисовка полученных ран прямо на теле врага!
+  e.wounds.forEach(w => {
+    ctx.fillStyle = w.type === 'crush' ? '#5e111b' : '#ff2a48';
+    ctx.fillRect(w.rx - 4, -34 + w.ry * 0.5, 9, 4);
+  });
+
+  // Суставная рука врага и его оружие (если оружие не выбито!)
+  let eShoulder = 0.25, eElbow = -0.6;
+  if (e.legBroken) {
+    // Гребёт рукой по полу при ползании!
+    eShoulder = -0.9 + Math.sin(e.stepPhase * 1.5) * 0.7;
+    eElbow = -0.4;
+  } else if (e.state === 'windup') {
+    eShoulder = -1.65; eElbow = -0.9;
+  } else if (e.state === 'strike') {
+    eShoulder = 0.95; eElbow = 0.1;
+  }
+
+  ctx.save();
+  ctx.translate(4, -40);
+  ctx.rotate(eShoulder);
+  ctx.drawImage(SPRITES.knightUpperArm, -4, 0, 8, 11);
+  ctx.translate(0, 10);
+  ctx.rotate(eElbow);
+  ctx.drawImage(SPRITES.knightForearm, -4, 0, 8, 11);
+  ctx.translate(0, 9);
+
+  if (!e.disarmed && e.type !== 'wraith') {
+    ctx.rotate(-1.2);
+    ctx.fillStyle = '#8d96ad';
+    if (e.type === 'warden' || isBoss) {
+      ctx.fillRect(0, -3, 28, 4);
+      ctx.fillStyle = '#e03448'; ctx.fillRect(18, -11, 10, 16);
+    } else {
+      ctx.fillRect(0, -2, 22, 4);
+    }
+  }
+  ctx.drawImage(SPRITES.knightHand, -3, -3, 7, 7);
+  ctx.restore();
+
+  ctx.filter = 'none';
+  ctx.restore();
+
+  if (e.hp < e.maxHp || e.type === 'boss') {
+    const barW = e.type === 'boss' ? 95 : e.w + 8;
+    const bx = cx - barW / 2;
+    ctx.fillStyle = '#120d0f'; ctx.fillRect(bx, e.y - 10, barW, 5);
+    ctx.fillStyle = e.type === 'boss' ? '#ffae38' : '#e63246';
+    ctx.fillRect(bx + 1, e.y - 9, (barW - 2) * (e.hp / e.maxHp), 3);
+  }
 }
 
 generateRoom(1, player);
