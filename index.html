@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#05050a">
+<title>NEON CORE: OVERDRIVE</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #040409;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    touch-action: none;
+    color: #fff;
+  }
+  #canvas-container {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  /* ВЕРТИКАЛЬНЫЙ МОБИЛЬНЫЙ HUD */
+  #hud {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)) 16px;
+  }
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+  }
+  .stat-card {
+    background: rgba(10, 12, 24, 0.72);
+    border: 1px solid rgba(0, 243, 255, 0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 8px 14px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.12);
+  }
+  .stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #00f3ff;
+    opacity: 0.85;
+  }
+  .stat-value {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 12px rgba(0, 243, 255, 0.7);
+  }
+  .combo-badge {
+    font-size: 14px;
+    font-weight: 800;
+    color: #ff00aa;
+    text-shadow: 0 0 10px #ff00aa;
+    margin-top: 2px;
+    min-height: 18px;
+  }
+  .bars-wrap {
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .bar-group {
+    background: rgba(10, 12, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 6px 10px;
+    backdrop-filter: blur(8px);
+  }
+  .bar-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .bar-track {
+    width: 100%;
+    height: 7px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    width: 100%;
+    transition: width 0.12s ease-out;
+  }
+  #hp-fill {
+    background: linear-gradient(90deg, #ff0055, #00ffaa);
+    box-shadow: 0 0 10px #00ffaa;
+  }
+  #dash-fill {
+    background: linear-gradient(90deg, #0088ff, #00f3ff);
+    box-shadow: 0 0 10px #00f3ff;
+  }
+
+  /* НИЖНЯЯ ЗОНА УПРАВЛЕНИЯ */
+  .bottom-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 100%;
+  }
+  .hint-box {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    max-width: 180px;
+    line-height: 1.35;
+  }
+  #dash-btn {
+    pointer-events: auto;
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 243, 255, 0.3) 0%, rgba(0, 40, 80, 0.75) 100%);
+    border: 2px solid #00f3ff;
+    box-shadow: 0 0 25px rgba(0, 243, 255, 0.45), inset 0 0 15px rgba(0, 243, 255, 0.3);
+    color: #fff;
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: 1px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    active: scale(0.92);
+    transition: transform 0.08s, opacity 0.2s;
+  }
+  #dash-btn:active {
+    transform: scale(0.9);
+    background: rgba(0, 243, 255, 0.6);
+  }
+  #dash-btn span {
+    font-size: 9px;
+    opacity: 0.75;
+    margin-top: 2px;
+  }
+
+  /* ПЛАВАЮЩИЙ ВИРТУАЛЬНЫЙ ДЖОЙСТИК */
+  #joystick-ring {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 243, 255, 0.45);
+    background: radial-gradient(circle, rgba(0, 243, 255, 0.08) 0%, rgba(0, 0, 0, 0.25) 100%);
+    box-shadow: 0 0 25px rgba(0, 243, 255, 0.2);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    display: none;
+    z-index: 3;
+  }
+  #joystick-knob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffff 0%, #00f3ff 70%);
+    box-shadow: 0 0 20px #00f3ff;
+    transform: translate(-50%, -50%);
+  }
+
+  /* ЭКРАН СТАРТА / GAME OVER */
+  #overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: radial-gradient(circle at center, rgba(12, 16, 36, 0.85) 0%, rgba(4, 4, 9, 0.96) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+  }
+  .game-title {
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #00f3ff, #ff00aa, #00ffaa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.4));
+    margin-bottom: 8px;
+  }
+  .game-sub {
+    font-size: 13px;
+    color: #9ba4b5;
+    max-width: 310px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+  .rules-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 28px;
+    text-align: left;
+  }
+  .rule-item {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .rule-item b {
+    color: #00f3ff;
+  }
+  .play-btn {
+    pointer-events: auto;
+    background: linear-gradient(90deg, #00f3ff, #0088ff);
+    border: none;
+    color: #040409;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 16px 42px;
+    border-radius: 999px;
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.6);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .play-btn:active {
+    transform: scale(0.95);
+  }
+  #final-score-box {
+    display: none;
+    margin-bottom: 20px;
+  }
+  #final-score-val {
+    font-size: 44px;
+    font-weight: 900;
+    color: #ff00aa;
+    text-shadow: 0 0 20px #ff00aa;
+  }
+  /* Вспышка при уроне */
+  #damage-flash {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background: radial-gradient(circle, transparent 40%, rgba(255, 0, 85, 0.65) 100%);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+<div id="damage-flash"></div>
+
+<!-- ПЛАВАЮЩИЙ ДЖОЙСТИК -->
+<div id="joystick-ring">
+  <div id="joystick-knob"></div>
+</div>
+
+<!-- МОБИЛЬНЫЙ ИНТЕРФЕЙС -->
+<div id="hud">
+  <div class="top-bar">
+    <div class="stat-card">
+      <div class="stat-label">Счет</div>
+      <div class="stat-value" id="score-val">0</div>
+      <div class="combo-badge" id="combo-val"></div>
+    </div>
+
+    <div class="bars-wrap">
+      <div class="bar-group">
+        <div class="bar-header">
+          <span style="color:#00ffaa">ЩИТ ЯДРА</span>
+          <span id="hp-text">100%</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" id="hp-fill"></div>
+        </div>
+      </div>
+
+      <div class="bar-group">
+        <div class="bar-header">
+          <span style="color:#00f3ff">ИМПУЛЬС (DASH)</span>
+          <span id="wave-text">ВОЛНА 1</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" id="dash-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-controls">
+    <div class="hint-box">
+      Тяни в любом месте для движения.<br>Двойной тап или кнопка — <b>ТАРАН</b>.
+    </div>
+    <button id="dash-btn">
+      DASH
+      <span>ТАРАН</span>
+    </button>
+  </div>
+</div>
+
+<!-- СТАРТОВЫЙ ЭКРАН -->
+<div id="overlay">
+  <div class="game-title">NEON CORE</div>
+  <div class="game-sub">3D-арена с физикой инерции и шейдерным свечением</div>
+
+  <div id="final-score-box">
+    <div class="stat-label">ИТОГОВЫЙ РЕЗУЛЬТАТ</div>
+    <div id="final-score-val">0</div>
+  </div>
+
+  <div class="rules-grid">
+    <div class="rule-item">🟢 <b>Квантовые кубы</b> — собирай для энергии, очков и восстановления щита.</div>
+    <div class="rule-item">🔴 <b>Шипастые дроны</b> — преследуют по физике. Обычное столкновение отнимает щит.</div>
+    <div class="rule-item">⚡ <b>Режим ТАРАНА (Dash)</b> — делает тебя неуязвимым и <b>взрывает врагов</b> при ударе!</div>
+  </div>
+
+  <button class="play-btn" id="start-btn">ЗАПУСТИТЬ ЯДРО</button>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+// ==========================================
+// 1. ПРОЦЕДУРНЫЙ СИНТЕЗАТОР ЗВУКА (Web Audio API)
+// ==========================================
+class SoundFX {
+  constructor() {
+    this.ctx = null;
+  }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioCtx();
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+  }
+  play(type) {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    if (type === 'pickup') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(1240, now + 0.14);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } else if (type === 'dash') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(680, now + 0.22);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+      osc.start(now);
+      osc.stop(now + 0.24);
+    } else if (type === 'kill') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.28);
+      gain.gain.setValueAtTime(0.32, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.29);
+      osc.start(now);
+      osc.stop(now + 0.29);
+    } else if (type === 'hit') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.linearRampToValueAtTime(40, now + 0.25);
+      gain.gain.setValueAtTime(0.28, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+      osc.start(now);
+      osc.stop(now + 0.26);
+    }
+  }
+}
+const sfx = new SoundFX();
+
+// ==========================================
+// 2. ИНИЦИАЛИЗАЦИЯ СЦЕНЫ И ШЕЙДЕРНОГО BLOOM
+// ==========================================
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x040409);
+scene.fog = new THREE.FogExp2(0x040409, 0.022);
+
+const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 120);
+camera.position.set(0, 22, 16);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ReinhardToneMapping;
+renderer.toneMappingExposure = 1.35;
+container.appendChild(renderer.domElement);
+
+// Пост-процессинг UnrealBloomPass
+const renderScene = new RenderPass(scene, camera);
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  1.45, // сила свечения
+  0.45, // радиус
+  0.15  // порог
+);
+const composer = new EffectComposer(renderer);
+composer.addPass(renderScene);
+composer.addPass(bloomPass);
+
+// Освещение
+const ambientLight = new THREE.AmbientLight(0x223355, 1.8);
+scene.add(ambientLight);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+dirLight.position.set(15, 30, 15);
+scene.add(dirLight);
+
+const playerLight = new THREE.PointLight(0x00f3ff, 6, 16);
+scene.add(playerLight);
+
+// ==========================================
+// 3. СОЗДАНИЕ КИБЕР-АРЕНЫ И ОКРУЖЕНИЯ
+// ==========================================
+const ARENA_RADIUS = 17.5;
+
+// Энергетическая сетка пола
+const gridHelper = new THREE.GridHelper(ARENA_RADIUS * 2.2, 28, 0x00f3ff, 0x161d3a);
+gridHelper.position.y = -0.5;
+scene.add(gridHelper);
+
+// Отражающий темный пол под сеткой
+const floorGeo = new THREE.CircleGeometry(ARENA_RADIUS, 64);
+const floorMat = new THREE.MeshStandardMaterial({
+  color: 0x060814,
+  roughness: 0.2,
+  metalness: 0.8
+});
+const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+floorMesh.rotation.x = -Math.PI / 2;
+floorMesh.position.y = -0.52;
+scene.add(floorMesh);
+
+// Неоновый силовой барьер по краю арены
+const ringGeo = new THREE.TorusGeometry(ARENA_RADIUS, 0.16, 16, 100);
+const ringMat = new THREE.MeshStandardMaterial({
+  color: 0x00f3ff,
+  emissive: 0x00f3ff,
+  emissiveIntensity: 2.2
+});
+const arenaRing = new THREE.Mesh(ringGeo, ringMat);
+arenaRing.rotation.x = Math.PI / 2;
+arenaRing.position.y = 0.1;
+scene.add(arenaRing);
+
+// Парящие фоновые монолиты вокруг арены
+const pillars = [];
+const pillarGeo = new THREE.BoxGeometry(1.4, 8, 1.4);
+for (let i = 0; i < 16; i++) {
+  const angle = (i / 16) * Math.PI * 2;
+  const dist = ARENA_RADIUS + 4.5 + Math.random() * 4;
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0x0a0e1a,
+    emissive: i % 2 === 0 ? 0x00f3ff : 0xff00aa,
+    emissiveIntensity: 0.45,
+    roughness: 0.3
+  });
+  const mesh = new THREE.Mesh(pillarGeo, mat);
+  mesh.position.set(Math.cos(angle) * dist, -1 + Math.random() * 3, Math.sin(angle) * dist);
+  scene.add(mesh);
+  pillars.push({ mesh, baseY: mesh.position.y, phase: i * 0.6 });
+}
+
+// ==========================================
+// 4. ИГРОК (ГИРОСКОПИЧЕСКОЕ ЯДРО)
+// ==========================================
+const playerGroup = new THREE.Group();
+scene.add(playerGroup);
+
+// Внутренняя плазменная сфера
+const coreGeo = new THREE.IcosahedronGeometry(0.75, 2);
+const coreMat = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  emissive: 0x00f3ff,
+  emissiveIntensity: 2.0,
+  wireframe: false,
+  roughness: 0.1,
+  metalness: 0.9
+});
+const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+playerGroup.add(coreMesh);
+
+// Внешняя вращающаяся гео-клетка
+const shellGeo = new THREE.OctahedronGeometry(1.05, 0);
+const shellMat = new THREE.MeshStandardMaterial({
+  color: 0x00f3ff,
+  emissive: 0x0088ff,
+  emissiveIntensity: 1.2,
+  wireframe: true
+});
+const shellMesh = new THREE.Mesh(shellGeo, shellMat);
+playerGroup.add(shellMesh);
+
+// Орбитальное кольцо рывка
+const auraGeo = new THREE.RingGeometry(1.15, 1.35, 32);
+const auraMat = new THREE.MeshBasicMaterial({
+  color: 0x00ffaa,
+  side: THREE.DoubleSide,
+  transparent: true,
+  opacity: 0.0
+});
+const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+auraMesh.rotation.x = Math.PI / 2;
+playerGroup.add(auraMesh);
+
+// ==========================================
+// 5. СОСТОЯНИЕ ИГРЫ И ФИЗИЧЕСКИЕ ПЕРЕМЕННЫЕ
+// ==========================================
+const state = {
+  running: false,
+  score: 0,
+  combo: 1,
+  comboTimer: 0,
+  wave: 1,
+  hp: 100,
+  dashEnergy: 100,
+  dashTimer: 0,
+  invulnTimer: 0,
+  shake: 0,
+  pos: new THREE.Vector3(0, 0.5, 0),
+  vel: new THREE.Vector3(0, 0, 0),
+  radius: 0.95
+};
+
+const enemies = [];
+const crystals = [];
+const particles = [];
+const shockwaves = [];
+const trailParticles = [];
+
+// ==========================================
+// 6. СПАВНЕРЫ ОБЪЕКТОВ И ЧАСТИЦ
+// ==========================================
+function spawnCrystal() {
+  const geo = new THREE.OctahedronGeometry(0.65, 0);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0x00ffaa,
+    emissive: 0x00ffaa,
+    emissiveIntensity: 2.2,
+    roughness: 0.1
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  const angle = Math.random() * Math.PI * 2;
+  const r = Math.random() * (ARENA_RADIUS - 3.5);
+  mesh.position.set(Math.cos(angle) * r, 0.6, Math.sin(angle) * r);
+  scene.add(mesh);
+  crystals.push({ mesh, phase: Math.random() * Math.PI * 2 });
+}
+
+function spawnEnemy(isElite = false) {
+  const radius = isElite ? 1.15 : 0.85;
+  const geo = isElite
+    ? new THREE.DodecahedronGeometry(radius, 0)
+    : new THREE.IcosahedronGeometry(radius, 0);
+
+  const colorHex = isElite ? 0xffaa00 : 0xff0055;
+  const mat = new THREE.MeshStandardMaterial({
+    color: colorHex,
+    emissive: colorHex,
+    emissiveIntensity: 1.8,
+    roughness: 0.25,
+    metalness: 0.7,
+    wireframe: isElite
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+
+  // Спавн ближе к границе арены, подальше от игрока
+  let angle = Math.random() * Math.PI * 2;
+  let spawnPos = new THREE.Vector3(
+    Math.cos(angle) * (ARENA_RADIUS - 1.8),
+    0.6,
+    Math.sin(angle) * (ARENA_RADIUS - 1.8)
+  );
+  if (spawnPos.distanceTo(state.pos) < 7) {
+    angle += Math.PI;
+    spawnPos.set(
+      Math.cos(angle) * (ARENA_RADIUS - 1.8),
+      0.6,
+      Math.sin(angle) * (ARENA_RADIUS - 1.8)
+    );
+  }
+  mesh.position.copy(spawnPos);
+  scene.add(mesh);
+
+  enemies.push({
+    mesh,
+    vel: new THREE.Vector3(),
+    radius,
+    isElite,
+    speed: isElite ? 18 + state.wave * 1.2 : 13 + state.wave * 0.9,
+    mass: isElite ? 1.8 : 1.0
+  });
+}
+
+function createExplosion(pos, colorHex, count = 22, speedScale = 1) {
+  const geo = new THREE.TetrahedronGeometry(0.24, 0);
+  for (let i = 0; i < count; i++) {
+    const mat = new THREE.MeshBasicMaterial({
+      color: colorHex,
+      transparent: true,
+      opacity: 1
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(pos);
+    const angle = Math.random() * Math.PI * 2;
+    const up = (Math.random() - 0.2) * 10;
+    const spd = (4 + Math.random() * 12) * speedScale;
+    const vel = new THREE.Vector3(Math.cos(angle) * spd, up, Math.sin(angle) * spd);
+    scene.add(mesh);
+    particles.push({ mesh, vel, life: 1.0, decay: 1.4 + Math.random() * 1.2 });
+  }
+
+  // Ударная волна по полу
+  const waveGeo = new THREE.RingGeometry(0.4, 0.75, 32);
+  const waveMat = new THREE.MeshBasicMaterial({
+    color: colorHex,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.9
+  });
+  const waveMesh = new THREE.Mesh(waveGeo, waveMat);
+  waveMesh.rotation.x = Math.PI / 2;
+  waveMesh.position.set(pos.x, -0.4, pos.z);
+  scene.add(waveMesh);
+  shockwaves.push({ mesh: waveMesh, scale: 1, alpha: 0.9 });
+}
+
+// ==========================================
+// 7. УПРАВЛЕНИЕ: ТАЧ-ДЖОЙСТИК + СВАЙП / ДВОЙНОЙ ТАП
+// ==========================================
+const joyRing = document.getElementById('joystick-ring');
+const joyKnob = document.getElementById('joystick-knob');
+const dashBtn = document.getElementById('dash-btn');
+
+const input = {
+  active: false,
+  touchId: null,
+  originX: 0,
+  originY: 0,
+  vecX: 0,
+  vecY: 0,
+  lastTapTime: 0,
+  keys: {}
+};
+
+const MAX_JOY_RADIUS = 48;
+
+function triggerDash() {
+  if (!state.running) return;
+  if (state.dashEnergy < 35 || state.dashTimer > 0) return;
+
+  sfx.play('dash');
+  state.dashEnergy = Math.max(0, state.dashEnergy - 45);
+  state.dashTimer = 0.36; // длительность тарана
+  state.invulnTimer = 0.45;
+  state.shake = 0.35;
+
+  // Направление рывка: по джойстику или по текущей скорости
+  let dir = new THREE.Vector3(input.vecX, 0, input.vecY);
+  if (dir.lengthSq() < 0.01) {
+    dir.copy(state.vel);
+    dir.y = 0;
+  }
+  if (dir.lengthSq() < 0.01) {
+    dir.set(0, 0, -1);
+  }
+  dir.normalize();
+
+  state.vel.copy(dir.multiplyScalar(34));
+  createExplosion(state.pos, 0x00f3ff, 12, 0.7);
+  if (navigator.vibrate) navigator.vibrate(30);
+}
+
+dashBtn.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+  triggerDash();
+});
+
+window.addEventListener('pointerdown', (e) => {
+  if (!state.running) return;
+  if (e.target === dashBtn || dashBtn.contains(e.target)) return;
+
+  const now = performance.now();
+  if (now - input.lastTapTime < 260) {
+    triggerDash();
+  }
+  input.lastTapTime = now;
+
+  if (!input.active) {
+    input.active = true;
+    input.touchId = e.pointerId;
+    input.originX = e.clientX;
+    input.originY = e.clientY;
+    input.vecX = 0;
+    input.vecY = 0;
+
+    joyRing.style.display = 'block';
+    joyRing.style.left = `${e.clientX}px`;
+    joyRing.style.top = `${e.clientY}px`;
+    joyKnob.style.transform = `translate(-50%, -50%)`;
+  }
+});
+
+window.addEventListener('pointermove', (e) => {
+  if (!input.active || e.pointerId !== input.touchId) return;
+  const dx = e.clientX - input.originX;
+  const dy = e.clientY - input.originY;
+  const dist = Math.hypot(dx, dy);
+  const clamped = Math.min(dist, MAX_JOY_RADIUS);
+  const angle = Math.atan2(dy, dx);
+
+  const kx = Math.cos(angle) * clamped;
+  const ky = Math.sin(angle) * clamped;
+  joyKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+
+  input.vecX = kx / MAX_JOY_RADIUS;
+  input.vecY = ky / MAX_JOY_RADIUS;
+});
+
+function releaseJoystick(e) {
+  if (input.active && e.pointerId === input.touchId) {
+    input.active = false;
+    input.touchId = null;
+    input.vecX = 0;
+    input.vecY = 0;
+    joyRing.style.display = 'none';
+  }
+}
+window.addEventListener('pointerup', releaseJoystick);
+window.addEventListener('pointercancel', releaseJoystick);
+
+// Поддержка клавиатуры на случай теста с ПК
+window.addEventListener('keydown', (e) => {
+  input.keys[e.code] = true;
+  if (e.code === 'Space') triggerDash();
+});
+window.addEventListener('keyup', (e) => {
+  input.keys[e.code] = false;
+});
+
+// ==========================================
+// 8. ЗАПУСК И ПЕРЕЗАПУСК ИГРЫ
+// ==========================================
+const overlay = document.getElementById('overlay');
+const startBtn = document.getElementById('start-btn');
+const scoreVal = document.getElementById('score-val');
+const comboVal = document.getElementById('combo-val');
+const hpFill = document.getElementById('hp-fill');
+const hpText = document.getElementById('hp-text');
+const dashFill = document.getElementById('dash-fill');
+const waveText = document.getElementById('wave-text');
+const finalScoreBox = document.getElementById('final-score-box');
+const finalScoreVal = document.getElementById('final-score-val');
+const damageFlash = document.getElementById('damage-flash');
+
+function resetGame() {
+  sfx.init();
+  // Очистка старых объектов
+  enemies.forEach(e => scene.remove(e.mesh));
+  crystals.forEach(c => scene.remove(c.mesh));
+  particles.forEach(p => scene.remove(p.mesh));
+  shockwaves.forEach(w => scene.remove(w.mesh));
+  enemies.length = 0;
+  crystals.length = 0;
+  particles.length = 0;
+  shockwaves.length = 0;
+
+  state.score = 0;
+  state.combo = 1;
+  state.comboTimer = 0;
+  state.wave = 1;
+  state.hp = 100;
+  state.dashEnergy = 100;
+  state.dashTimer = 0;
+  state.invulnTimer = 0;
+  state.pos.set(0, 0.6, 0);
+  state.vel.set(0, 0, 0);
+  state.running = true;
+
+  for (let i = 0; i < 4; i++) spawnCrystal();
+  for (let i = 0; i < 4; i++) spawnEnemy(false);
+
+  overlay.style.display = 'none';
+  updateHUD();
+}
+
+function gameOver() {
+  state.running = false;
+  input.active = false;
+  joyRing.style.display = 'none';
+  finalScoreBox.style.display = 'block';
+  finalScoreVal.textContent = Math.floor(state.score);
+  startBtn.textContent = 'ИГРАТЬ СНОВА';
+  overlay.style.display = 'flex';
+}
+
+startBtn.addEventListener('click', resetGame);
+
+function updateHUD() {
+  scoreVal.textContent = Math.floor(state.score);
+  comboVal.textContent = state.combo > 1 ? `КОМБО x${state.combo}` : '';
+  hpFill.style.width = `${Math.max(0, state.hp)}%`;
+  hpText.textContent = `${Math.ceil(Math.max(0, state.hp))}%`;
+  dashFill.style.width = `${Math.min(100, state.dashEnergy)}%`;
+  waveText.textContent = `ВОЛНА ${state.wave}`;
+  dashBtn.style.opacity = state.dashEnergy >= 35 ? '1' : '0.4';
+}
+
+// ==========================================
+// 9. ГЛАВНЫЙ ФИЗИЧЕСКИЙ И ИГРОВОЙ ЦИКЛ
+// ==========================================
+let lastTime = performance.now();
+let spawnAccumulator = 0;
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
+  lastTime = now;
+
+  // Анимация фоновых монолитов
+  pillars.forEach(p => {
+    p.mesh.position.y = p.baseY + Math.sin(now * 0.002 + p.phase) * 1.1;
+    p.mesh.rotation.y += dt * 0.3;
+  });
+
+  if (state.running) {
+    // 1. Вектор управления (тач + клавиатура)
+    let moveX = input.vecX;
+    let moveZ = input.vecY;
+    if (input.keys['KeyW'] || input.keys['ArrowUp']) moveZ -= 1;
+    if (input.keys['KeyS'] || input.keys['ArrowDown']) moveZ += 1;
+    if (input.keys['KeyA'] || input.keys['ArrowLeft']) moveX -= 1;
+    if (input.keys['KeyD'] || input.keys['ArrowRight']) moveX += 1;
+
+    // 2. Таймеры тарана и комбо
+    if (state.dashTimer > 0) state.dashTimer -= dt;
+    if (state.invulnTimer > 0) state.invulnTimer -= dt;
+    if (state.comboTimer > 0) {
+      state.comboTimer -= dt;
+      if (state.comboTimer <= 0) state.combo = 1;
+    }
+
+    const isDashing = state.dashTimer > 0;
+    state.dashEnergy = Math.min(100, state.dashEnergy + dt * 16);
+
+    // 3. Физика движения игрока с инерцией
+    const accel = isDashing ? 12 : 42;
+    state.vel.x += moveX * accel * dt;
+    state.vel.z += moveZ * accel * dt;
+
+    // Сопротивление среды
+    const damping = isDashing ? 0.985 : 0.91;
+    state.vel.multiplyScalar(Math.pow(damping, dt * 60));
+
+    state.pos.addScaledVector(state.vel, dt);
+
+    // Упругое столкновение с границей круглой арены
+    const distFromCenter = Math.hypot(state.pos.x, state.pos.z);
+    if (distFromCenter > ARENA_RADIUS - state.radius) {
+      const nx = state.pos.x / distFromCenter;
+      const nz = state.pos.z / distFromCenter;
+      state.pos.x = nx * (ARENA_RADIUS - state.radius);
+      state.pos.z = nz * (ARENA_RADIUS - state.radius);
+
+      // Отражение вектора скорости от борта
+      const dot = state.vel.x * nx + state.vel.z * nz;
+      if (dot > 0) {
+        state.vel.x -= 1.7 * dot * nx;
+        state.vel.z -= 1.7 * dot * nz;
+        state.shake = Math.max(state.shake, 0.12);
+      }
+    }
+
+    // Визуал ядра игрока
+    playerGroup.position.copy(state.pos);
+    coreMesh.rotation.x += state.vel.z * dt * 1.4;
+    coreMesh.rotation.z -= state.vel.x * dt * 1.4;
+    shellMesh.rotation.y -= dt * (isDashing ? 14 : 3);
+    shellMesh.rotation.x += dt * 2;
+
+    if (isDashing) {
+      coreMat.emissive.setHex(0x00ffaa);
+      coreMat.emissiveIntensity = 3.5;
+      auraMat.opacity = 0.85;
+      auraMesh.scale.setScalar(1 + Math.sin(now * 0.04) * 0.15);
+    } else {
+      coreMat.emissive.setHex(0x00f3ff);
+      coreMat.emissiveIntensity = 2.0;
+      auraMat.opacity = 0.0;
+    }
+
+    playerLight.position.set(state.pos.x, 2.2, state.pos.z);
+
+    // Шлейф за игроком на высокой скорости
+    if (state.vel.lengthSq() > 25) {
+      const trailGeo = new THREE.OctahedronGeometry(isDashing ? 0.38 : 0.2, 0);
+      const trailMat = new THREE.MeshBasicMaterial({
+        color: isDashing ? 0x00ffaa : 0x00f3ff,
+        transparent: true,
+        opacity: 0.75
+      });
+      const tMesh = new THREE.Mesh(trailGeo, trailMat);
+      tMesh.position.copy(state.pos);
+      scene.add(tMesh);
+      trailParticles.push({ mesh: tMesh, life: 0.28 });
+    }
+
+    // 4. Сбор энергетических кубов
+    for (let i = crystals.length - 1; i >= 0; i--) {
+      const c = crystals[i];
+      c.mesh.rotation.y += dt * 3;
+      c.mesh.rotation.x += dt * 1.8;
+      c.mesh.position.y = 0.65 + Math.sin(now * 0.005 + c.phase) * 0.25;
+
+      if (c.mesh.position.distanceTo(state.pos) < state.radius + 0.75) {
+        sfx.play('pickup');
+        state.score += 50 * state.combo;
+        state.dashEnergy = Math.min(100, state.dashEnergy + 28);
+        state.hp = Math.min(100, state.hp + 6);
+        createExplosion(c.mesh.position, 0x00ffaa, 14, 0.8);
+        scene.remove(c.mesh);
+        crystals.splice(i, 1);
+        spawnCrystal();
+      }
+    }
+
+    // 5. ИИ и физика врагов
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const e = enemies[i];
+      const toPlayer = new THREE.Vector3().subVectors(state.pos, e.mesh.position);
+      toPlayer.y = 0;
+      const dist = toPlayer.length();
+      if (dist > 0.001) toPlayer.divideScalar(dist);
+
+      e.vel.addScaledVector(toPlayer, e.speed * dt);
+      e.vel.multiplyScalar(Math.pow(0.92, dt * 60));
+      e.mesh.position.addScaledVector(e.vel, dt);
+      e.mesh.rotation.x += dt * 3.5;
+      e.mesh.rotation.y += dt * 2.5;
+
+      // Отталкивание врагов друг от друга (физическая толпа)
+      for (let j = i - 1; j >= 0; j--) {
+        const other = enemies[j];
+        const diff = new THREE.Vector3().subVectors(e.mesh.position, other.mesh.position);
+        diff.y = 0;
+        const d = diff.length();
+        const minDist = e.radius + other.radius;
+        if (d > 0 && d < minDist) {
+          diff.normalize();
+          const overlap = minDist - d;
+          e.mesh.position.addScaledVector(diff, overlap * 0.5);
+          other.mesh.position.addScaledVector(diff, -overlap * 0.5);
+        }
+      }
+
+      // Столкновение с игроком
+      const hitDist = state.radius + e.radius;
+      if (e.mesh.position.distanceTo(state.pos) < hitDist) {
+        if (isDashing) {
+          // УНИЧТОЖЕНИЕ ВРАГА ТАРАНОМ
+          sfx.play('kill');
+          state.combo++;
+          state.comboTimer = 3.2;
+          state.score += (e.isElite ? 250 : 100) * state.combo;
+          state.dashEnergy = Math.min(100, state.dashEnergy + 35);
+          state.dashTimer = Math.min(0.4, state.dashTimer + 0.12); // продление рывка при килле
+          state.shake = 0.55;
+          createExplosion(e.mesh.position, e.isElite ? 0xffaa00 : 0xff0055, 28, 1.35);
+          scene.remove(e.mesh);
+          enemies.splice(i, 1);
+          if (navigator.vibrate) navigator.vibrate([25, 30, 45]);
+        } else if (state.invulnTimer <= 0) {
+          // ПОЛУЧЕНИЕ УРОНА И УПРУГИЙ ОТСКОК
+          sfx.play('hit');
+          state.hp -= e.isElite ? 26 : 18;
+          state.invulnTimer = 0.55;
+          state.combo = 1;
+          state.shake = 0.65;
+
+          const knockDir = new THREE.Vector3().subVectors(state.pos, e.mesh.position).normalize();
+          state.vel.addScaledVector(knockDir, 22);
+          e.vel.addScaledVector(knockDir, -18);
+
+          damageFlash.style.opacity = '1';
+          setTimeout(() => { damageFlash.style.opacity = '0'; }, 140);
+          createExplosion(state.pos, 0xff0055, 16, 0.9);
+          if (navigator.vibrate) navigator.vibrate(120);
+
+          if (state.hp <= 0) {
+            gameOver();
+            break;
+          }
+        }
+      }
+    }
+
+    // 6. Спавн новых волн врагов
+    spawnAccumulator += dt;
+    const waveInterval = Math.max(1.2, 3.2 - state.wave * 0.18);
+    if (spawnAccumulator >= waveInterval) {
+      spawnAccumulator = 0;
+      if (enemies.length < 12 + state.wave * 2) {
+        const eliteChance = Math.min(0.45, state.wave * 0.06);
+        spawnEnemy(Math.random() < eliteChance);
+      }
+    }
+
+    // Повышение волны от набранных очков
+    state.wave = 1 + Math.floor(state.score / 1200);
+    updateHUD();
+  }
+
+  // 7. Обновление частиц, шлейфа и ударных волн
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.vel.y -= 24 * dt; // гравитация осколков
+    p.mesh.position.addScaledVector(p.vel, dt);
+    if (p.mesh.position.y < -0.4) {
+      p.mesh.position.y = -0.4;
+      p.vel.y *= -0.55; // отскок осколков от пола
+    }
+    p.mesh.rotation.x += dt * 8;
+    p.life -= p.decay * dt;
+    p.mesh.material.opacity = Math.max(0, p.life);
+    if (p.life <= 0) {
+      scene.remove(p.mesh);
+      particles.splice(i, 1);
+    }
+  }
+
+  for (let i = trailParticles.length - 1; i >= 0; i--) {
+    const t = trailParticles[i];
+    t.life -= dt;
+    t.mesh.scale.setScalar(Math.max(0.01, t.life * 3.2));
+    t.mesh.material.opacity = t.life * 2.5;
+    if (t.life <= 0) {
+      scene.remove(t.mesh);
+      trailParticles.splice(i, 1);
+    }
+  }
+
+  for (let i = shockwaves.length - 1; i >= 0; i--) {
+    const w = shockwaves[i];
+    w.scale += dt * 16;
+    w.alpha -= dt * 2.2;
+    w.mesh.scale.setScalar(w.scale);
+    w.mesh.material.opacity = Math.max(0, w.alpha);
+    if (w.alpha <= 0) {
+      scene.remove(w.mesh);
+      shockwaves.splice(i, 1);
+    }
+  }
+
+  // 8. Динамическая камера со слежением, FOV-эффектом и тряской
+  const targetCamX = state.pos.x * 0.45;
+  const targetCamZ = state.pos.z * 0.45 + 15.5;
+  camera.position.x += (targetCamX - camera.position.x) * 6 * dt;
+  camera.position.z += (targetCamZ - camera.position.z) * 6 * dt;
+
+  // Screen shake
+  if (state.shake > 0) {
+    camera.position.x += (Math.random() - 0.5) * state.shake * 1.4;
+    camera.position.z += (Math.random() - 0.5) * state.shake * 1.4;
+    state.shake = Math.max(0, state.shake - dt * 2.8);
+  }
+
+  // Расширение угла обзора при ускорении
+  const speedNorm = Math.min(1, state.vel.length() / 30);
+  const targetFov = 60 + speedNorm * 12;
+  camera.fov += (targetFov - camera.fov) * 8 * dt;
+  camera.updateProjectionMatrix();
+
+  camera.lookAt(state.pos.x * 0.3, 0, state.pos.z * 0.3);
+
+  composer.render();
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+});
+
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
