@@ -5,6 +5,9 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
@@ -16,40 +19,45 @@ jobs:
       - name: 2. Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: 3. Setup Java 21 (for Android Gradle)
+      - name: 3. Setup Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: 4. Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: 5. Generate Capacitor Android Project from index.html
+      - name: 4. Generate Capacitor Android Project
         run: |
           mkdir -p www
           cp index.html www/index.html
 
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
 
           npx cap init "Neon Core" "com.arseniy.neoncore" --web-dir www
           npx cap add android
 
-          # Фиксируем вертикальную (portrait) ориентацию и полноэкранный режим в AndroidManifest.xml
           sed -i 's/android:configChanges="/android:screenOrientation="portrait" android:configChanges="/g' android/app/src/main/AndroidManifest.xml
 
-      - name: 6. Build Debug APK via Gradle
+      - name: 5. Build Debug APK via Gradle
         working-directory: ./android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
-      - name: 7. Upload Ready APK as Artifact
+      - name: 6. Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NeonCore-Android-APK
+          name: NeonCore-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+
+      - name: 7. Publish APK directly to Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Neon Core APK v1.0.${{ github.run_number }}"
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
