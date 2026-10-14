@@ -1,0 +1,55 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 3. Setup Java 21 (for Android Gradle)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: 4. Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 5. Generate Capacitor Android Project from index.html
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+          npx cap init "Neon Core" "com.arseniy.neoncore" --web-dir www
+          npx cap add android
+
+          # Фиксируем вертикальную (portrait) ориентацию и полноэкранный режим в AndroidManifest.xml
+          sed -i 's/android:configChanges="/android:screenOrientation="portrait" android:configChanges="/g' android/app/src/main/AndroidManifest.xml
+
+      - name: 6. Build Debug APK via Gradle
+        working-directory: ./android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: 7. Upload Ready APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeonCore-Android-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
